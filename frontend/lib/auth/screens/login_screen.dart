@@ -9,68 +9,188 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _usernameController = TextEditingController();
-  final _passwordController = TextEditingController();
-  bool _loading = false;
-  String? _error;
+  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
 
-  void _login() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-
-    try {
-      final data = await AuthService.login(
-        _usernameController.text,
-        _passwordController.text,
-      );
-
-      if (!mounted) return;
-
-      if (data["role"] == "Librarian") {
-        Navigator.pushReplacementNamed(context, "/librarian");
-      } else {
-        Navigator.pushReplacementNamed(context, "/student");
-      }
-    } catch (e) {
-      setState(() {
-        _error = "Invalid username or password";
-      });
-    } finally {
-      setState(() {
-        _loading = false;
-      });
-    }
-  }
+  bool _obscurePassword = true;
+  bool _showError = false;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Login")),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            TextField(
-              controller: _usernameController,
-              decoration: const InputDecoration(labelText: "Username"),
-            ),
-            TextField(
-              controller: _passwordController,
-              obscureText: true,
-              decoration: const InputDecoration(labelText: "Password"),
-            ),
-            const SizedBox(height: 20),
-            if (_error != null)
-              Text(_error!, style: const TextStyle(color: Colors.red)),
-            ElevatedButton(
-              onPressed: _loading ? null : _login,
-              child: _loading
-                  ? const CircularProgressIndicator()
-                  : const Text("Login"),
-            ),
-          ],
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const SizedBox(height: 40),
+
+              Container(
+                height: 80,
+                width: 80,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1E2A38),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Icon(
+                  Icons.menu_book_rounded,
+                  color: Color(0xFFF5C16C),
+                  size: 40,
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              const Text(
+                "NIT Andhra Pradesh",
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+
+              const SizedBox(height: 4),
+
+              const Text(
+                "Library Management System",
+                style: TextStyle(fontSize: 14, color: Colors.grey),
+              ),
+
+              const SizedBox(height: 30),
+
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  "Welcome...",
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                ),
+              ),
+
+              const SizedBox(height: 4),
+
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  "Please sign in to continue",
+                  style: TextStyle(color: Colors.grey),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              TextField(
+                controller: _usernameController,
+                decoration: InputDecoration(
+                  labelText: "Username or Student ID",
+                  hintText: "e.g. 202400123",
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              TextField(
+                controller: _passwordController,
+                obscureText: _obscurePassword,
+                decoration: InputDecoration(
+                  labelText: "Password",
+                  hintText: "Enter your password",
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePassword
+                          ? Icons.visibility_off
+                          : Icons.visibility,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscurePassword = !_obscurePassword;
+                      });
+                    },
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 8),
+
+              if (_showError)
+                Row(
+                  children: const [
+                    Icon(Icons.error_outline, color: Colors.red, size: 18),
+                    SizedBox(width: 6),
+                    Text(
+                      "Invalid credentials. Please try again",
+                      style: TextStyle(color: Colors.red),
+                    ),
+                  ],
+                ),
+
+              const SizedBox(height: 8),
+
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () {},
+                  child: const Text("Forgot password?"),
+                ),
+              ),
+
+              const SizedBox(height: 10),
+
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1E88E5),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  onPressed: () async {
+                  //   try {
+                  //     await AuthService.login(
+                  //       _usernameController.text.trim(),
+                  //       _passwordController.text.trim(),
+                  //     );
+
+                  //     if (!mounted) return;
+
+                  //     Navigator.pushReplacementNamed(context, "/student");
+                  //   } catch (e) {
+                  //     setState(() {
+                  //       _showError = true;
+                  //     });
+                  //   }
+                    Navigator.pushReplacementNamed(context, "/student");
+                  },
+
+                  child: const Text("Login", style: TextStyle(fontSize: 16)),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              const Text(
+                "Need help accessing your account?",
+                style: TextStyle(color: Colors.grey),
+              ),
+              TextButton(
+                onPressed: () {},
+                child: const Text("Contact Support"),
+              ),
+
+              const SizedBox(height: 16),
+
+              const Text(
+                "NIT AP Library System v1.0",
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+            ],
+          ),
         ),
       ),
     );
