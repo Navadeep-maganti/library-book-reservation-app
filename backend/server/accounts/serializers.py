@@ -1,32 +1,34 @@
-from django.contrib.auth import authenticate
+from django.contrib.auth import authenticate, get_user_model
 from rest_framework import serializers
 from rest_framework.authtoken.models import Token
+
+User = get_user_model()
+
 
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField()
     password = serializers.CharField(write_only=True)
 
     def validate(self, data):
-        user = authenticate(
-            username=data['username'],
-            password=data['password']
-        )
+        identifier = data["username"].strip()
+        password = data["password"]
+
+        user = authenticate(username=identifier, password=password)
 
         if not user:
-            raise serializers.ValidationError("Invalid Credentials")
+            fallback_user = User.objects.filter(student_id=identifier).first()
+            if fallback_user:
+                user = authenticate(username=fallback_user.username, password=password)
+
+        if not user:
+            raise serializers.ValidationError("Invalid credentials")
 
         token, _ = Token.objects.get_or_create(user=user)
 
-        # ✅ FIX HERE
-        groups = list(user.groups.values_list('name', flat=True))
-
-        role = 'student'
-        if 'librarian' in groups:
-            role = 'librarian'
-
         return {
-            'token': token.key,
-            'username': user.username,
-            'user_id': user.id,
-            'role': role,
+            "token": token.key,
+            "username": user.username,
+            "user_id": user.id,
+            "role": user.role,
+            "student_id": user.student_id,
         }

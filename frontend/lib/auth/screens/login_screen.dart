@@ -14,6 +14,53 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool _obscurePassword = true;
   bool _showError = false;
+  String _errorMessage = "Invalid credentials. Please try again";
+  bool _isLoading = false;
+
+  Future<void> _handleLogin() async {
+    final username = _usernameController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (username.isEmpty || password.isEmpty) {
+      setState(() {
+        _showError = true;
+        _errorMessage = "Please enter username and password.";
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _showError = false;
+    });
+
+    try {
+      final role = await AuthService.login(username, password);
+      if (!mounted) return;
+
+      final route = role == "librarian" ? "/librarian" : "/student";
+      Navigator.pushReplacementNamed(context, route);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _showError = true;
+        _errorMessage = e.toString();
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -118,12 +165,19 @@ class _LoginScreenState extends State<LoginScreen> {
 
               if (_showError)
                 Row(
-                  children: const [
-                    Icon(Icons.error_outline, color: Colors.red, size: 18),
-                    SizedBox(width: 6),
-                    Text(
-                      "Invalid credentials. Please try again",
-                      style: TextStyle(color: Colors.red),
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      color: Colors.red,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        _errorMessage,
+                        style: const TextStyle(color: Colors.red),
+                      ),
                     ),
                   ],
                 ),
@@ -150,25 +204,17 @@ class _LoginScreenState extends State<LoginScreen> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  onPressed: () async {
-                  //   try {
-                  //     await AuthService.login(
-                  //       _usernameController.text.trim(),
-                  //       _passwordController.text.trim(),
-                  //     );
-
-                  //     if (!mounted) return;
-
-                  //     Navigator.pushReplacementNamed(context, "/student");
-                  //   } catch (e) {
-                  //     setState(() {
-                  //       _showError = true;
-                  //     });
-                  //   }
-                    Navigator.pushReplacementNamed(context, "/student");
-                  },
-
-                  child: const Text("Login", style: TextStyle(fontSize: 16)),
+                  onPressed: _isLoading ? null : _handleLogin,
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text("Login", style: TextStyle(fontSize: 16)),
                 ),
               ),
 

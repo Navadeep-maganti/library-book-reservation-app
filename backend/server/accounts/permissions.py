@@ -1,8 +1,17 @@
-from rest_framework.permisisions import BasePermission
+from rest_framework.permissions import BasePermission
+
+
 class IsLibrarian(BasePermission):
     def has_permission(self, request, view):
-        return request.user.groups.filter(name='lLibrariab').exists()
-    
+        return (
+            bool(request.user and request.user.is_authenticated)
+            and request.user.role == "librarian"
+        )
+
+
 class IsStudent(BasePermission):
     def has_permission(self, request, view):
-        return request.user.groups.filter(name='Student').exists()
+        return (
+            bool(request.user and request.user.is_authenticated)
+            and request.user.role == "student"
+        )
