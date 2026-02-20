@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../../auth/services/auth_service.dart';
 
 String todayDate() {
   return DateFormat('EEEE, MMM d').format(DateTime.now());
@@ -7,6 +8,34 @@ String todayDate() {
 
 class StudentDashboard extends StatelessWidget {
   const StudentDashboard({super.key});
+
+  Future<void> _handleLogout(BuildContext context) async {
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Logout"),
+          content: const Text("Do you want to logout from this account?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text("Logout"),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldLogout != true) return;
+
+    await AuthService.logout();
+    if (!context.mounted) return;
+    Navigator.pushNamedAndRemoveUntil(context, "/login", (route) => false);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +52,7 @@ class StudentDashboard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(14),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -69,6 +98,10 @@ class StudentDashboard extends StatelessWidget {
                     icon: const Icon(Icons.notifications_none),
                     onPressed: () {},
                   ),
+                  IconButton(
+                    icon: const Icon(Icons.logout),
+                    onPressed: () => _handleLogout(context),
+                  ),
                 ],
               ),
             ),
@@ -81,7 +114,6 @@ class StudentDashboard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            
             // Search Bar
             TextField(
               decoration: InputDecoration(

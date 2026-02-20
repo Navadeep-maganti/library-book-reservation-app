@@ -56,4 +56,29 @@ class AuthService {
       throw AuthException("Login failed. Please try again.");
     }
   }
+
+  static Future<void> logout() async {
+    final token = await _storage.read(key: "token");
+
+    if (token != null && token.isNotEmpty) {
+      try {
+        await http
+            .post(
+              Uri.parse("${ApiConstants.baseUrl}/api/auth/logout/"),
+              headers: {
+                "Authorization": "Token $token",
+                "Content-Type": "application/json",
+              },
+            )
+            .timeout(const Duration(seconds: 8));
+      } catch (_) {
+        // Best effort: clear local auth state even if server cannot be reached.
+      }
+    }
+
+    await _storage.delete(key: "token");
+    await _storage.delete(key: "role");
+    await _storage.delete(key: "username");
+    await _storage.delete(key: "user_id");
+  }
 }
