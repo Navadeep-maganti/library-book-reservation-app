@@ -7,7 +7,7 @@ import "pages/due_alerts_page.dart";
 import "pages/fine_management_page.dart";
 import "pages/library_announcements_page.dart";
 import "pages/notifications_page.dart";
-import "pages/token_reservation_page.dart";
+import "pages/waiting_list_page.dart";
 
 class StudentDashboard extends StatefulWidget {
   const StudentDashboard({super.key});
@@ -18,8 +18,55 @@ class StudentDashboard extends StatefulWidget {
 
 class _StudentDashboardState extends State<StudentDashboard> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  final TextEditingController _searchController = TextEditingController();
+  final List<_SearchableBook> _catalog = const [
+    _SearchableBook(
+      title: "Operating Systems",
+      author: "Silberschatz",
+      shelf: "CS-A12",
+      availableCount: 6,
+    ),
+    _SearchableBook(
+      title: "Database Systems",
+      author: "Ramakrishnan",
+      shelf: "CS-B08",
+      availableCount: 2,
+    ),
+    _SearchableBook(
+      title: "Computer Networks",
+      author: "Tanenbaum",
+      shelf: "CS-A04",
+      availableCount: 5,
+    ),
+    _SearchableBook(
+      title: "Clean Code",
+      author: "Robert C. Martin",
+      shelf: "SE-C11",
+      availableCount: 1,
+    ),
+    _SearchableBook(
+      title: "Distributed Systems",
+      author: "Coulouris",
+      shelf: "CS-D02",
+      availableCount: 0,
+    ),
+    _SearchableBook(
+      title: "Introduction to Algorithms",
+      author: "Cormen",
+      shelf: "CS-AL09",
+      availableCount: 0,
+    ),
+    _SearchableBook(
+      title: "Data Mining Concepts",
+      author: "Han and Kamber",
+      shelf: "CS-DM05",
+      availableCount: 0,
+    ),
+  ];
+
   int _currentIndex = 0;
   String _username = "Student";
+  String _searchQuery = "";
 
   @override
   void initState() {
@@ -64,12 +111,25 @@ class _StudentDashboardState extends State<StudentDashboard> {
     Navigator.push(context, MaterialPageRoute(builder: (context) => page));
   }
 
+  void _openBottomTab(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final tabs = [
-      _buildOverviewTab(),
+      _buildHomeTab(),
       _buildMyBooksTab(),
       _buildFineTab(),
+      _buildWaitingListTab(),
       _buildHistoryTab(),
     ];
 
@@ -78,11 +138,52 @@ class _StudentDashboardState extends State<StudentDashboard> {
       drawer: _buildServicesDrawer(),
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.account_circle_outlined),
+          tooltip: "Open menu",
+          icon: const Icon(Icons.menu),
           onPressed: () => _scaffoldKey.currentState?.openDrawer(),
         ),
-        title: Text("Welcome, $_username"),
+        titleSpacing: 0,
+        title: SizedBox(
+          height: 40,
+          child: TextField(
+            controller: _searchController,
+            onChanged: (value) {
+              setState(() {
+                _searchQuery = value.trim().toLowerCase();
+                if (_searchQuery.isNotEmpty) {
+                  _currentIndex = 0;
+                }
+              });
+            },
+            decoration: InputDecoration(
+              hintText: "Search books",
+              isDense: true,
+              prefixIcon: const Icon(Icons.search, size: 20),
+              suffixIcon: _searchQuery.isEmpty
+                  ? null
+                  : IconButton(
+                      onPressed: () {
+                        _searchController.clear();
+                        setState(() {
+                          _searchQuery = "";
+                        });
+                      },
+                      icon: const Icon(Icons.close, size: 18),
+                    ),
+              filled: true,
+              fillColor: Colors.grey.shade100,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+        ),
         actions: [
+          IconButton(
+            onPressed: () => _openPage(const LibraryAnnouncementsPage()),
+            icon: const Icon(Icons.campaign_outlined),
+          ),
           IconButton(
             onPressed: () => _openPage(const NotificationsPage()),
             icon: const Icon(Icons.notifications_none_outlined),
@@ -117,6 +218,11 @@ class _StudentDashboardState extends State<StudentDashboard> {
             label: "Fines",
           ),
           NavigationDestination(
+            icon: Icon(Icons.hourglass_bottom_outlined),
+            selectedIcon: Icon(Icons.hourglass_bottom),
+            label: "Waiting List",
+          ),
+          NavigationDestination(
             icon: Icon(Icons.history_outlined),
             selectedIcon: Icon(Icons.history),
             label: "History",
@@ -124,6 +230,20 @@ class _StudentDashboardState extends State<StudentDashboard> {
         ],
       ),
     );
+  }
+
+  Widget _buildHomeTab() {
+    if (_searchQuery.isNotEmpty) {
+      final filteredBooks = _catalog
+          .where(
+            (book) =>
+                book.title.toLowerCase().contains(_searchQuery) ||
+                book.author.toLowerCase().contains(_searchQuery),
+          )
+          .toList();
+      return _buildBookSearchResults(filteredBooks);
+    }
+    return _buildOverviewTab();
   }
 
   Widget _buildOverviewTab() {
@@ -135,10 +255,10 @@ class _StudentDashboardState extends State<StudentDashboard> {
         onTap: () => _openPage(const BookAvailabilityPage()),
       ),
       _StudentFeature(
-        title: "Token Reservation",
-        subtitle: "Join issue queue",
-        icon: Icons.confirmation_num_outlined,
-        onTap: () => _openPage(const TokenReservationPage()),
+        title: "Waiting List",
+        subtitle: "Track queue status",
+        icon: Icons.hourglass_bottom_outlined,
+        onTap: () => _openBottomTab(3),
       ),
       _StudentFeature(
         title: "Fine Management",
@@ -162,13 +282,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
         title: "Borrow History",
         subtitle: "View past borrows",
         icon: Icons.history,
-        onTap: () => _openPage(const BorrowHistoryPage()),
-      ),
-      _StudentFeature(
-        title: "Announcements",
-        subtitle: "Latest library updates",
-        icon: Icons.campaign_outlined,
-        onTap: () => _openPage(const LibraryAnnouncementsPage()),
+        onTap: () => _openBottomTab(4),
       ),
     ];
 
@@ -176,6 +290,32 @@ class _StudentDashboardState extends State<StudentDashboard> {
       key: const ValueKey("overview"),
       padding: const EdgeInsets.all(16),
       children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.blueGrey.shade50,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.blueGrey.shade100),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Welcome, $_username",
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                "Explore services, track due dates, and manage your reading.",
+                style: TextStyle(color: Colors.grey.shade700),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
         Container(
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
@@ -250,6 +390,15 @@ class _StudentDashboardState extends State<StudentDashboard> {
       ("Database Systems", "Due in 3 days"),
       ("Computer Networks", "Due in 5 days"),
     ];
+    final filteredBorrows = _searchQuery.isEmpty
+        ? activeBorrows
+        : activeBorrows
+              .where(
+                (book) =>
+                    book.$1.toLowerCase().contains(_searchQuery) ||
+                    book.$2.toLowerCase().contains(_searchQuery),
+              )
+              .toList();
     return ListView(
       key: const ValueKey("my_books"),
       padding: const EdgeInsets.all(16),
@@ -259,7 +408,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 10),
-        ...activeBorrows.map(
+        ...filteredBorrows.map(
           (book) => Card(
             margin: const EdgeInsets.only(bottom: 10),
             child: ListTile(
@@ -272,6 +421,10 @@ class _StudentDashboardState extends State<StudentDashboard> {
             ),
           ),
         ),
+        if (filteredBorrows.isEmpty)
+          const Card(
+            child: ListTile(title: Text("No books match your search.")),
+          ),
         const SizedBox(height: 14),
         Row(
           children: [
@@ -285,7 +438,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
             const SizedBox(width: 12),
             Expanded(
               child: FilledButton.tonalIcon(
-                onPressed: () => _openPage(const BorrowHistoryPage()),
+                onPressed: () => _openBottomTab(4),
                 icon: const Icon(Icons.history),
                 label: const Text("History"),
               ),
@@ -302,6 +455,15 @@ class _StudentDashboardState extends State<StudentDashboard> {
       ("Clean Architecture", "2 days late", 30.0, "Paid"),
       ("Data Warehousing", "1 day late", 15.0, "Unpaid"),
     ];
+    final filteredFines = _searchQuery.isEmpty
+        ? fines
+        : fines
+              .where(
+                (fine) =>
+                    fine.$1.toLowerCase().contains(_searchQuery) ||
+                    fine.$2.toLowerCase().contains(_searchQuery),
+              )
+              .toList();
     final pending = fines
         .where((f) => f.$4 == "Unpaid")
         .fold<double>(0, (sum, item) => sum + item.$3);
@@ -322,12 +484,12 @@ class _StudentDashboardState extends State<StudentDashboard> {
           ),
         ),
         const SizedBox(height: 12),
-        ...fines.map(
+        ...filteredFines.map(
           (fine) => Card(
             margin: const EdgeInsets.only(bottom: 10),
             child: ListTile(
               title: Text(fine.$1),
-              subtitle: Text("${fine.$2}  •  Rs ${fine.$3.toStringAsFixed(0)}"),
+              subtitle: Text("${fine.$2} - Rs ${fine.$3.toStringAsFixed(0)}"),
               trailing: Chip(
                 label: Text(fine.$4),
                 backgroundColor: fine.$4 == "Unpaid"
@@ -337,6 +499,10 @@ class _StudentDashboardState extends State<StudentDashboard> {
             ),
           ),
         ),
+        if (filteredFines.isEmpty)
+          const Card(
+            child: ListTile(title: Text("No fine records match your search.")),
+          ),
         const SizedBox(height: 8),
         FilledButton(
           onPressed: () => _openPage(const FineManagementPage()),
@@ -347,6 +513,21 @@ class _StudentDashboardState extends State<StudentDashboard> {
   }
 
   Widget _buildHistoryTab() {
+    final history = const [
+      ("Clean Code", "Issued: 02 Jan 2026", "Returned: 15 Jan 2026"),
+      ("Database Systems", "Issued: 10 Jan 2026", "Returned: 25 Jan 2026"),
+      ("Operating Systems", "Issued: 11 Feb 2026", "Not Returned"),
+    ];
+    final filteredHistory = _searchQuery.isEmpty
+        ? history
+        : history
+              .where(
+                (item) =>
+                    item.$1.toLowerCase().contains(_searchQuery) ||
+                    item.$2.toLowerCase().contains(_searchQuery) ||
+                    item.$3.toLowerCase().contains(_searchQuery),
+              )
+              .toList();
     return ListView(
       key: const ValueKey("history"),
       padding: const EdgeInsets.all(16),
@@ -356,11 +537,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 10),
-        ...const [
-          ("Clean Code", "Issued: 02 Jan 2026", "Returned: 15 Jan 2026"),
-          ("Database Systems", "Issued: 10 Jan 2026", "Returned: 25 Jan 2026"),
-          ("Operating Systems", "Issued: 11 Feb 2026", "Not Returned"),
-        ].map(
+        ...filteredHistory.map(
           (item) => Card(
             margin: const EdgeInsets.only(bottom: 10),
             child: ListTile(
@@ -370,6 +547,12 @@ class _StudentDashboardState extends State<StudentDashboard> {
             ),
           ),
         ),
+        if (filteredHistory.isEmpty)
+          const Card(
+            child: ListTile(
+              title: Text("No history entries match your search."),
+            ),
+          ),
         const SizedBox(height: 8),
         FilledButton.tonal(
           onPressed: () => _openPage(const BorrowHistoryPage()),
@@ -379,13 +562,60 @@ class _StudentDashboardState extends State<StudentDashboard> {
     );
   }
 
+  Widget _buildWaitingListTab() {
+    return const WaitingListPageBody();
+  }
+
+  Widget _buildBookSearchResults(List<_SearchableBook> books) {
+    return ListView(
+      key: const ValueKey("book_search"),
+      padding: const EdgeInsets.all(16),
+      children: [
+        Text(
+          "Book Results for \"${_searchController.text.trim()}\"",
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 10),
+        if (books.isEmpty)
+          const Card(
+            child: ListTile(
+              title: Text("No books found."),
+              subtitle: Text("Try searching by title or author."),
+            ),
+          ),
+        ...books.map(
+          (book) => Card(
+            margin: const EdgeInsets.only(bottom: 10),
+            child: ListTile(
+              onTap: () {
+                _openPage(BookAvailabilityPage(initialQuery: book.title));
+              },
+              title: Text(book.title),
+              subtitle: Text("${book.author} - Shelf ${book.shelf}"),
+              trailing: Chip(
+                label: Text(
+                  book.availableCount > 0
+                      ? "Available (${book.availableCount})"
+                      : "Join Waiting List",
+                ),
+                backgroundColor: book.availableCount > 0
+                    ? Colors.green.shade50
+                    : Colors.orange.shade50,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildServicesDrawer() {
     final services = [
       ("Book Availability", Icons.search, const BookAvailabilityPage()),
       (
-        "Token Reservation",
-        Icons.confirmation_num_outlined,
-        const TokenReservationPage(),
+        "Waiting List",
+        Icons.hourglass_bottom_outlined,
+        const WaitingListPage(),
       ),
       (
         "Fine Management",
@@ -435,7 +665,13 @@ class _StudentDashboardState extends State<StudentDashboard> {
                         title: Text(service.$1),
                         onTap: () {
                           Navigator.pop(context);
-                          _openPage(service.$3);
+                          if (service.$1 == "Waiting List") {
+                            _openBottomTab(3);
+                          } else if (service.$1 == "Borrow History") {
+                            _openBottomTab(4);
+                          } else {
+                            _openPage(service.$3);
+                          }
                         },
                       ),
                     )
@@ -548,4 +784,18 @@ class _FeatureCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _SearchableBook {
+  const _SearchableBook({
+    required this.title,
+    required this.author,
+    required this.shelf,
+    required this.availableCount,
+  });
+
+  final String title;
+  final String author;
+  final String shelf;
+  final int availableCount;
 }
