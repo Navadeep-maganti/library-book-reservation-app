@@ -81,4 +81,18 @@ class AuthService {
     await _storage.delete(key: "username");
     await _storage.delete(key: "user_id");
   }
+
+  static Future<String> getInitialRoute() async {
+    final token = await _storage.read(key: "token");
+    final role = await _storage.read(key: "role");
+
+    if (token == null || token.isEmpty) return "/login";
+    if (role == "librarian") return "/librarian";
+    if (role == "student") return "/student";
+    return "/login";
+  }
+  static Future<String> getUsername() async {
+    final username = await _storage.read(key: "username");
+    return username ?? "Unknown";
+  }
 }
