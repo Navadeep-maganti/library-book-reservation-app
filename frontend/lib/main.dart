@@ -5,6 +5,7 @@ import 'core/services/app_notification_service.dart';
 import 'student/screens/student_dashboard.dart';
 import 'librarian/screens/librarian_dashboard.dart';
 import 'core/theme/app_theme.dart';
+import 'core/widgets/app_ui.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -77,6 +78,22 @@ class _StartupRouterState extends State<StartupRouter> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    return Scaffold(
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: const AppPageHeader(
+              title: "Opening your library",
+              subtitle:
+                  "Checking your saved session and preparing the dashboard.",
+              icon: Icons.auto_stories_rounded,
+              badges: [AppHeaderBadge(label: "Status", value: "Loading")],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

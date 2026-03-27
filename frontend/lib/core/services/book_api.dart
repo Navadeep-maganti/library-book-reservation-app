@@ -92,7 +92,7 @@ class BookAPI {
 
     return OfflineCacheService.getMap(
       cacheKey: "book_availability_$bookId",
-      uri: Uri.parse('${_booksEndpoint}$bookId/availability/'),
+      uri: Uri.parse("$_booksEndpoint$bookId/availability/"),
       token: token,
       failureMessage: "Failed to get availability",
     );

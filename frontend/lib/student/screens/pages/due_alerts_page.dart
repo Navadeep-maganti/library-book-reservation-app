@@ -2,6 +2,7 @@ import "package:flutter/material.dart";
 import "package:intl/intl.dart";
 import "../../../core/services/library_api.dart";
 import "../../../core/utils/resume_refresh_state_mixin.dart";
+import "../../../core/widgets/app_ui.dart";
 
 class DueAlertsPage extends StatefulWidget {
   const DueAlertsPage({super.key});
@@ -92,34 +93,41 @@ class _DueAlertsPageState extends State<DueAlertsPage>
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            Card(
-              child: ListTile(
-                leading: const Icon(Icons.notifications_active_outlined),
-                title: const Text("This Week Summary"),
-                subtitle: Text(
-                  "Due today: ${_toInt(summary["num_due_today"])}  |  "
-                  "Due soon: ${_toInt(summary["num_due_soon"])}  |  "
-                  "Overdue: ${_toInt(summary["num_overdue"])}",
+            AppPageHeader(
+              title: "Due alerts",
+              subtitle:
+                  "Stay ahead of return deadlines and spot overdue books before fines stack up.",
+              icon: Icons.notifications_active_outlined,
+              badges: [
+                AppHeaderBadge(
+                  label: "Due today",
+                  value: "${_toInt(summary["num_due_today"])}",
                 ),
-              ),
+                AppHeaderBadge(
+                  label: "Due soon",
+                  value: "${_toInt(summary["num_due_soon"])}",
+                ),
+                AppHeaderBadge(
+                  label: "Overdue",
+                  value: "${_toInt(summary["num_overdue"])}",
+                ),
+              ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 18),
             if (_isLoading)
               const Center(child: CircularProgressIndicator())
             else if (_error != null)
-              Card(
-                child: ListTile(
-                  title: const Text("Failed to load due alerts"),
-                  subtitle: Text(_error!.replaceFirst("Exception: ", "")),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.refresh),
-                    onPressed: _loadAlerts,
-                  ),
-                ),
+              AppErrorCard(
+                title: "Failed to load due alerts",
+                message: _error!.replaceFirst("Exception: ", ""),
+                onRetry: _loadAlerts,
               )
             else if (items.isEmpty)
-              const Card(
-                child: ListTile(title: Text("No due alerts at the moment")),
+              const AppEmptyStateCard(
+                icon: Icons.task_alt_outlined,
+                title: "No due alerts at the moment",
+                subtitle:
+                    "You do not have any items nearing their due date right now.",
               )
             else
               ...items.map((item) {
@@ -128,21 +136,60 @@ class _DueAlertsPageState extends State<DueAlertsPage>
                 final dueText = _dueLabel(item["due_date"]);
                 final isOverdue = dueText.toLowerCase().contains("overdue");
                 return Card(
-                  margin: const EdgeInsets.only(bottom: 10),
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: isOverdue
-                          ? Colors.red.shade50
-                          : Colors.orange.shade50,
-                      child: Icon(
-                        isOverdue
-                            ? Icons.warning_amber_rounded
-                            : Icons.schedule,
-                        color: isOverdue ? Colors.red : Colors.orange.shade800,
-                      ),
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: Padding(
+                    padding: const EdgeInsets.all(18),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: isOverdue
+                                ? Colors.red.withValues(alpha: 0.08)
+                                : Colors.orange.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Icon(
+                            isOverdue
+                                ? Icons.warning_amber_rounded
+                                : Icons.schedule,
+                            color: isOverdue
+                                ? const Color(0xFFDC2626)
+                                : const Color(0xFFB45309),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "${detail["title"] ?? "Untitled"}",
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Chip(
+                                label: Text(
+                                  isOverdue
+                                      ? "Needs return now"
+                                      : "Upcoming due date",
+                                ),
+                                backgroundColor: isOverdue
+                                    ? Colors.red.withValues(alpha: 0.08)
+                                    : Colors.orange.withValues(alpha: 0.12),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(dueText),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                    title: Text("${detail["title"] ?? "Untitled"}"),
-                    subtitle: Text(dueText),
                   ),
                 );
               }),

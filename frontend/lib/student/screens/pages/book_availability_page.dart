@@ -1,7 +1,9 @@
 import "dart:async";
 import "package:flutter/material.dart";
 import "../../../core/services/book_api.dart";
+import "../../../core/services/library_api.dart";
 import "../../../core/utils/resume_refresh_state_mixin.dart";
+import "../../../core/widgets/app_ui.dart";
 import "book_details_page.dart";
 
 class BookAvailabilityPage extends StatefulWidget {
@@ -21,6 +23,7 @@ class _BookAvailabilityPageState extends State<BookAvailabilityPage>
   String? _error;
   String _query = "";
   List<Map<String, dynamic>> _books = const [];
+  Map<String, dynamic> _activeItemLimit = const {};
 
   @override
   void initState() {
@@ -50,22 +53,30 @@ class _BookAvailabilityPageState extends State<BookAvailabilityPage>
     }
 
     try {
-      if (_query.isEmpty) {
-        final books = await BookAPI.getBooks();
-        if (!mounted) return;
-        setState(() {
-          _error = null;
-          _books = books;
-        });
-      } else {
-        final result = await BookAPI.searchBooks(title: _query);
-        final books = List<Map<String, dynamic>>.from(result["books"] ?? []);
-        if (!mounted) return;
-        setState(() {
-          _error = null;
-          _books = books;
-        });
-      }
+      final results = await Future.wait<Object>([
+        _query.isEmpty
+            ? BookAPI.getBooks()
+            : BookAPI.searchBooks(title: _query),
+        DashboardAPI.getDashboardSummary().catchError(
+          (_) => const <String, dynamic>{},
+        ),
+      ]);
+      final booksResult = results[0];
+      final books = booksResult is List<Map<String, dynamic>>
+          ? booksResult
+          : List<Map<String, dynamic>>.from(
+              (booksResult as Map<String, dynamic>)["books"] ?? const [],
+            );
+      final summary = Map<String, dynamic>.from(results[1] as Map);
+      final activeItemLimit = Map<String, dynamic>.from(
+        (summary["active_item_limit"] as Map<String, dynamic>?) ?? const {},
+      );
+      if (!mounted) return;
+      setState(() {
+        _error = null;
+        _books = books;
+        _activeItemLimit = activeItemLimit;
+      });
     } catch (e) {
       if (!mounted || silent) return;
       setState(() {
@@ -92,10 +103,40 @@ class _BookAvailabilityPageState extends State<BookAvailabilityPage>
     return int.tryParse("$value") ?? 0;
   }
 
+  bool _toBool(dynamic value) {
+    if (value is bool) return value;
+    return "$value".toLowerCase() == "true";
+  }
+
+  bool get _canReserveMore {
+    if (_activeItemLimit.isEmpty) {
+      return true;
+    }
+    return _toBool(_activeItemLimit["can_reserve_more"]);
+  }
+
+  String? get _reservationDisabledMessage {
+    if (_canReserveMore) {
+      return null;
+    }
+    final message = "${_activeItemLimit["message"] ?? ""}".trim();
+    if (message.isNotEmpty) {
+      return message;
+    }
+    final totalActive = _toInt(_activeItemLimit["total_active"]);
+    final maxAllowed = _toInt(_activeItemLimit["max_allowed"]);
+    return "You already have $totalActive active item(s). The limit is $maxAllowed.";
+  }
+
   Future<void> _openBookDetails(Map<String, dynamic> book) async {
     final updated = await Navigator.push<bool>(
       context,
-      MaterialPageRoute(builder: (_) => BookDetailsPage(book: book)),
+      MaterialPageRoute(
+        builder: (_) => BookDetailsPage(
+          book: book,
+          reservationDisabledMessage: _reservationDisabledMessage,
+        ),
+      ),
     );
     if (updated == true) {
       _loadBooks();
@@ -104,6 +145,11 @@ class _BookAvailabilityPageState extends State<BookAvailabilityPage>
 
   @override
   Widget build(BuildContext context) {
+    final availableCount = _books
+        .where((book) => _toInt(book["available_copies"]) > 0)
+        .length;
+    final waitingCount = _books.length - availableCount;
+
     return Scaffold(
       appBar: AppBar(title: const Text("Book Availability")),
       body: RefreshIndicator(
@@ -111,81 +157,94 @@ class _BookAvailabilityPageState extends State<BookAvailabilityPage>
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(18),
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF0F766E), Color(0xFF0EA5E9)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.library_books_outlined, color: Colors.white),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      "Browse books and open details to reserve instantly.",
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.9),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+            AppPageHeader(
+              title: "Browse the catalog",
+              subtitle:
+                  "Search by title, inspect availability, and open any book to reserve it or join the waiting list.",
+              icon: Icons.library_books_outlined,
+              badges: [
+                AppHeaderBadge(label: "Results", value: "${_books.length}"),
+                AppHeaderBadge(label: "Ready now", value: "$availableCount"),
+              ],
             ),
             const SizedBox(height: 14),
-            TextField(
-              controller: _searchController,
-              onChanged: _onSearchChanged,
-              decoration: InputDecoration(
-                hintText: "Search by title",
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _query.isEmpty
-                    ? null
-                    : IconButton(
-                        onPressed: () {
-                          _searchController.clear();
-                          _query = "";
-                          _loadBooks();
-                        },
-                        icon: const Icon(Icons.close),
+            if (!_isLoading && _error == null && !_canReserveMore) ...[
+              AppInfoBanner(
+                icon: Icons.info_outline,
+                message: _reservationDisabledMessage!,
+                color: const Color(0xFFB45309),
+              ),
+              const SizedBox(height: 14),
+            ],
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  children: [
+                    TextField(
+                      controller: _searchController,
+                      onChanged: _onSearchChanged,
+                      decoration: InputDecoration(
+                        hintText: "Search by title",
+                        prefixIcon: const Icon(Icons.search),
+                        suffixIcon: _query.isEmpty
+                            ? null
+                            : IconButton(
+                                onPressed: () {
+                                  _searchController.clear();
+                                  _query = "";
+                                  _loadBooks();
+                                },
+                                icon: const Icon(Icons.close),
+                              ),
                       ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _CatalogSummaryCard(
+                            title: "Ready now",
+                            value: "$availableCount",
+                            color: const Color(0xFF15803D),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _CatalogSummaryCard(
+                            title: "Waiting only",
+                            value: "$waitingCount",
+                            color: const Color(0xFFD97706),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ),
             const SizedBox(height: 16),
             if (!_isLoading && _error == null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Text(
-                  "${_books.length} book(s) found",
-                  style: TextStyle(color: Colors.grey.shade700),
-                ),
+              AppSectionHeader(
+                title: "${_books.length} book(s) found",
+                subtitle: _query.isEmpty
+                    ? "Showing the full collection."
+                    : "Filtered results for your search.",
               ),
+            if (!_isLoading && _error == null) const SizedBox(height: 12),
             if (_isLoading)
               const Center(child: CircularProgressIndicator())
             else if (_error != null)
-              Card(
-                child: ListTile(
-                  title: const Text("Failed to load books"),
-                  subtitle: Text(_error!.replaceFirst("Exception: ", "")),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.refresh),
-                    onPressed: _loadBooks,
-                  ),
-                ),
+              AppErrorCard(
+                title: "Failed to load books",
+                message: _error!.replaceFirst("Exception: ", ""),
+                onRetry: _loadBooks,
               )
             else if (_books.isEmpty)
-              const Card(
-                child: ListTile(
-                  title: Text("No books found"),
-                  subtitle: Text("Try a different search term."),
-                ),
+              const AppEmptyStateCard(
+                icon: Icons.search_off_outlined,
+                title: "No books found",
+                subtitle: "Try another title keyword to see matching books.",
               )
             else
               ..._books.map((book) {
@@ -196,23 +255,11 @@ class _BookAvailabilityPageState extends State<BookAvailabilityPage>
                   child: InkWell(
                     onTap: () => _openBookDetails(book),
                     child: Padding(
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.all(14),
                       child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Container(
-                            width: 70,
-                            height: 90,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF0F3D57),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            alignment: Alignment.center,
-                            child: const Icon(
-                              Icons.menu_book_rounded,
-                              color: Colors.white,
-                              size: 32,
-                            ),
-                          ),
+                          const AppBookCover(width: 60, height: 82),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Column(
@@ -229,26 +276,56 @@ class _BookAvailabilityPageState extends State<BookAvailabilityPage>
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  "${book["author"] ?? "-"}",
+                                  "by ${book["author"] ?? "-"}",
                                   style: TextStyle(color: Colors.grey.shade700),
                                 ),
-                                const SizedBox(height: 4),
+                                const SizedBox(height: 2),
                                 Text(
                                   "Shelf ${book["shelf"] ?? "-"}",
                                   style: TextStyle(color: Colors.grey.shade600),
                                 ),
                                 const SizedBox(height: 10),
-                                Chip(
-                                  label: Text(
-                                    available
-                                        ? "Available (${_toInt(book["available_copies"])})"
-                                        : "Waiting only",
-                                  ),
-                                  backgroundColor: available
-                                      ? Colors.green.shade50
-                                      : Colors.orange.shade50,
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: [
+                                    Chip(
+                                      label: Text(
+                                        available
+                                            ? "Available (${_toInt(book["available_copies"])})"
+                                            : "Waiting only",
+                                      ),
+                                      backgroundColor: available
+                                          ? Colors.green.withValues(alpha: 0.1)
+                                          : Colors.orange.withValues(
+                                              alpha: 0.12,
+                                            ),
+                                    ),
+                                    if (!_canReserveMore)
+                                      Chip(
+                                        label: const Text(
+                                          "Reservation limit reached",
+                                        ),
+                                        backgroundColor: Colors.red.withValues(
+                                          alpha: 0.08,
+                                        ),
+                                      ),
+                                  ],
                                 ),
                               ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE0F2FE),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: const Icon(
+                              Icons.arrow_forward_rounded,
+                              color: Color(0xFF1D4ED8),
                             ),
                           ),
                         ],
@@ -259,6 +336,44 @@ class _BookAvailabilityPageState extends State<BookAvailabilityPage>
               }),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _CatalogSummaryCard extends StatelessWidget {
+  const _CatalogSummaryCard({
+    required this.title,
+    required this.value,
+    required this.color,
+  });
+
+  final String title;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        children: [
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: TextStyle(color: color, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+          ),
+        ],
       ),
     );
   }

@@ -1,6 +1,7 @@
 Django==5.2.10
 djangorestframework==3.15.2
-djangorestframework-authtoken==1.0.0
+Django==5.2.10
+djangorestframework==3.15.2
 django-cors-headers==4.6.0
 firebase-admin==6.5.0
 Pillow==10.4.0

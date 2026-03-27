@@ -270,3 +270,7 @@ Username: admin (or any librarian user)
 ✓ Role-based access (student/librarian)
 
 Enjoy your library management system!
+
+
+ cd c:\Users\uppug\library_app\frontend
+flutter run --dart-define=API_BASE_URL=http://10.118.79.36:8000

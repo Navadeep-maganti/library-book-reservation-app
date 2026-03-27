@@ -2,6 +2,7 @@ import "package:flutter/material.dart";
 import "package:intl/intl.dart";
 import "../../../core/services/library_api.dart";
 import "../../../core/utils/resume_refresh_state_mixin.dart";
+import "../../../core/widgets/app_ui.dart";
 
 class LibraryAnnouncementsPage extends StatefulWidget {
   const LibraryAnnouncementsPage({super.key});
@@ -12,7 +13,9 @@ class LibraryAnnouncementsPage extends StatefulWidget {
 }
 
 class _LibraryAnnouncementsPageState extends State<LibraryAnnouncementsPage>
-    with WidgetsBindingObserver, ResumeRefreshStateMixin<LibraryAnnouncementsPage> {
+    with
+        WidgetsBindingObserver,
+        ResumeRefreshStateMixin<LibraryAnnouncementsPage> {
   bool _isLoading = true;
   String? _error;
   List<Map<String, dynamic>> _announcements = const [];
@@ -70,21 +73,34 @@ class _LibraryAnnouncementsPageState extends State<LibraryAnnouncementsPage>
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            AppPageHeader(
+              title: "Announcements",
+              subtitle:
+                  "Catch policy updates, special notices, and important messages from the library team.",
+              icon: Icons.campaign_outlined,
+              badges: [
+                AppHeaderBadge(
+                  label: "Updates",
+                  value: "${_announcements.length}",
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
             if (_isLoading)
               const Center(child: CircularProgressIndicator())
             else if (_error != null)
-              Card(
-                child: ListTile(
-                  title: const Text("Failed to load announcements"),
-                  subtitle: Text(_error!.replaceFirst("Exception: ", "")),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.refresh),
-                    onPressed: _loadAnnouncements,
-                  ),
-                ),
+              AppErrorCard(
+                title: "Failed to load announcements",
+                message: _error!.replaceFirst("Exception: ", ""),
+                onRetry: _loadAnnouncements,
               )
             else if (_announcements.isEmpty)
-              const Card(child: ListTile(title: Text("No announcements found")))
+              const AppEmptyStateCard(
+                icon: Icons.mark_chat_read_outlined,
+                title: "No announcements found",
+                subtitle:
+                    "New notices from the library will appear here as soon as they are published.",
+              )
             else
               ..._announcements.map((announcement) {
                 final createdAt = _formatDate(announcement["created_at"]);

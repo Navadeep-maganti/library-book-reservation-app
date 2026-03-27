@@ -220,6 +220,105 @@ class NotificationSyncTests(APITestCase):
             ).exists()
         )
 
+    def test_reservation_is_blocked_when_active_issues_and_reservations_reach_three(self):
+        second_book = Book.objects.create(
+            title="Refactoring",
+            author="Martin Fowler",
+            isbn=f"limit-isbn-{uuid4().hex[:10]}",
+            total_copies=2,
+            available_copies=1,
+        )
+        third_book = Book.objects.create(
+            title="Design Patterns",
+            author="GoF",
+            isbn=f"limit-isbn-{uuid4().hex[:10]}",
+            total_copies=2,
+            available_copies=0,
+        )
+        target_book = Book.objects.create(
+            title="Patterns of Enterprise Application Architecture",
+            author="Martin Fowler",
+            isbn=f"limit-isbn-{uuid4().hex[:10]}",
+            total_copies=2,
+            available_copies=1,
+        )
+
+        IssuedBook.objects.create(
+            student=self.student,
+            book=self.book,
+            due_date=timezone.now() + timedelta(days=7),
+        )
+        IssuedBook.objects.create(
+            student=self.student,
+            book=second_book,
+            due_date=timezone.now() + timedelta(days=7),
+        )
+        BookReservation.objects.create(
+            student=self.student,
+            book=third_book,
+            queue_position=1,
+            status="pending",
+        )
+
+        response = self.client.post(
+            "/api/reservations/reserve/",
+            {"book_id": target_book.id},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("active item", response.data["error"])
+        self.assertFalse(
+            BookReservation.objects.filter(
+                student=self.student,
+                book=target_book,
+                status__in=["pending", "notified"],
+            ).exists()
+        )
+
+    def test_dashboard_summary_reports_active_item_limit(self):
+        second_book = Book.objects.create(
+            title="Code Complete",
+            author="Steve McConnell",
+            isbn=f"summary-isbn-{uuid4().hex[:10]}",
+            total_copies=2,
+            available_copies=1,
+        )
+        waiting_book = Book.objects.create(
+            title="Operating Systems",
+            author="Silberschatz",
+            isbn=f"summary-isbn-{uuid4().hex[:10]}",
+            total_copies=1,
+            available_copies=0,
+        )
+
+        IssuedBook.objects.create(
+            student=self.student,
+            book=self.book,
+            due_date=timezone.now() + timedelta(days=7),
+        )
+        IssuedBook.objects.create(
+            student=self.student,
+            book=second_book,
+            due_date=timezone.now() + timedelta(days=7),
+        )
+        BookReservation.objects.create(
+            student=self.student,
+            book=waiting_book,
+            queue_position=1,
+            status="pending",
+        )
+
+        response = self.client.get("/api/dashboard/summary/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["active_item_limit"]["issued_count"], 2)
+        self.assertEqual(response.data["active_item_limit"]["reservation_count"], 1)
+        self.assertEqual(response.data["active_item_limit"]["total_active"], 3)
+        self.assertEqual(response.data["active_item_limit"]["max_allowed"], 3)
+        self.assertFalse(response.data["active_item_limit"]["can_reserve_more"])
+        self.assertIn("Return or cancel one item", response.data["active_item_limit"]["message"])
+
 
 class DynamicFineTests(APITestCase):
     def setUp(self):

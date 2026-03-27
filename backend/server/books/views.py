@@ -20,6 +20,7 @@ from .serializers import (
 
 RESERVATION_HOLD_MINUTES = 30
 MAX_DAILY_RESERVATION_ATTEMPTS = 2
+MAX_ACTIVE_STUDENT_ITEMS = 3
 
 
 def _sum_amounts(values):
@@ -54,6 +55,39 @@ def _reservation_limit_message(book_title):
         f'You have already used both reservation attempts for "{book_title}" today. '
         'Please try again tomorrow.'
     )
+
+
+def _active_student_item_limit_message(*, total_active, max_allowed):
+    return (
+        f"You already have {total_active} active item(s) "
+        f"(issued books + reservations). The maximum allowed is {max_allowed}. "
+        "Return or cancel one item before making another reservation."
+    )
+
+
+def _active_student_item_limit(student):
+    issued_count = IssuedBook.objects.filter(
+        student=student,
+        is_returned=False,
+    ).count()
+    reservation_count = BookReservation.objects.filter(
+        student=student,
+        status__in=["pending", "notified"],
+    ).count()
+    total_active = issued_count + reservation_count
+    can_reserve_more = total_active < MAX_ACTIVE_STUDENT_ITEMS
+    return {
+        "issued_count": issued_count,
+        "reservation_count": reservation_count,
+        "total_active": total_active,
+        "max_allowed": MAX_ACTIVE_STUDENT_ITEMS,
+        "remaining_slots": max(0, MAX_ACTIVE_STUDENT_ITEMS - total_active),
+        "can_reserve_more": can_reserve_more,
+        "message": None if can_reserve_more else _active_student_item_limit_message(
+            total_active=total_active,
+            max_allowed=MAX_ACTIVE_STUDENT_ITEMS,
+        ),
+    }
 
 
 def _calculate_overdue_days(issued, reference_time=None):
@@ -615,6 +649,13 @@ class BookReservationViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
+            active_item_limit = _active_student_item_limit(request.user)
+            if not active_item_limit["can_reserve_more"]:
+                return Response(
+                    {"error": active_item_limit["message"]},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
             # Get queue position
             queue_position = BookReservation.objects.filter(
                 book=book,
@@ -933,6 +974,7 @@ class DashboardViewSet(viewsets.ViewSet):
             student=request.user,
             status__in=['pending', 'notified']
         )
+        active_item_limit = _active_student_item_limit(request.user)
         announcements = Announcement.objects.filter(is_active=True)[:5]
 
         return Response({
@@ -955,5 +997,6 @@ class DashboardViewSet(viewsets.ViewSet):
             'pending_reservations': {
                 'count': reservations.count()
             },
+            'active_item_limit': active_item_limit,
             'announcements': AnnouncementSerializer(announcements, many=True).data
         })

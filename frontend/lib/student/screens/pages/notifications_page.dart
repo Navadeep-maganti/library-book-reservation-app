@@ -2,6 +2,7 @@ import "package:flutter/material.dart";
 import "package:intl/intl.dart";
 import "../../../core/services/library_api.dart";
 import "../../../core/utils/resume_refresh_state_mixin.dart";
+import "../../../core/widgets/app_ui.dart";
 
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({super.key});
@@ -176,34 +177,44 @@ class _NotificationsPageState extends State<NotificationsPage>
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            if (!_isLoading && _error == null)
-              Card(
-                child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: Colors.blue.shade50,
-                    child: const Icon(Icons.notifications_active_outlined),
+            if (!_isLoading && _error == null) ...[
+              AppPageHeader(
+                title: "Notifications",
+                subtitle:
+                    "Library activity, reservation updates, reminders, and announcements all land here.",
+                icon: Icons.notifications_active_outlined,
+                badges: [
+                  AppHeaderBadge(
+                    label: "Total",
+                    value: "${_notifications.length}",
                   ),
-                  title: Text("${_notifications.length} total notifications"),
-                  subtitle: Text("$_unreadCount unread"),
-                ),
+                  AppHeaderBadge(label: "Unread", value: "$_unreadCount"),
+                ],
+              ),
+              const SizedBox(height: 18),
+            ],
+            if (!_isLoading && _error == null)
+              AppSectionHeader(
+                title: "Recent updates",
+                subtitle: _unreadCount == 0
+                    ? "Everything has been read."
+                    : "$_unreadCount unread notification(s) still need attention.",
               ),
             if (!_isLoading && _error == null) const SizedBox(height: 12),
             if (_isLoading)
               const Center(child: CircularProgressIndicator())
             else if (_error != null)
-              Card(
-                child: ListTile(
-                  title: const Text("Failed to load notifications"),
-                  subtitle: Text(_error!.replaceFirst("Exception: ", "")),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.refresh),
-                    onPressed: _loadNotifications,
-                  ),
-                ),
+              AppErrorCard(
+                title: "Failed to load notifications",
+                message: _error!.replaceFirst("Exception: ", ""),
+                onRetry: _loadNotifications,
               )
             else if (_notifications.isEmpty)
-              const Card(
-                child: ListTile(title: Text("No notifications available")),
+              const AppEmptyStateCard(
+                icon: Icons.notifications_off_outlined,
+                title: "No notifications available",
+                subtitle:
+                    "Once the library sends updates or reminders, they will show up here.",
               )
             else
               ..._notifications.map((item) {

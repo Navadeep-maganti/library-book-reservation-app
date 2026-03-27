@@ -83,7 +83,9 @@ class ReservationAPI {
           .timeout(const Duration(seconds: 8));
 
       if (response.statusCode == 201) {
-        final data = Map<String, dynamic>.from(jsonDecode(response.body) as Map);
+        final data = Map<String, dynamic>.from(
+          jsonDecode(response.body) as Map,
+        );
         await OfflineCacheService.invalidateAllForToken(token);
         return data;
       } else if (response.statusCode == 400) {
@@ -103,7 +105,7 @@ class ReservationAPI {
     try {
       final response = await http
           .post(
-            Uri.parse('${_endpoint}$reservationId/cancel/'),
+            Uri.parse("$_endpoint$reservationId/cancel/"),
             headers: {
               "Authorization": "Token $token",
               "Content-Type": "application/json",
@@ -166,7 +168,7 @@ class FineAPI {
     try {
       final response = await http
           .post(
-            Uri.parse('${_endpoint}$fineId/pay/'),
+            Uri.parse("$_endpoint$fineId/pay/"),
             headers: {
               "Authorization": "Token $token",
               "Content-Type": "application/json",
@@ -181,7 +183,9 @@ class FineAPI {
           .timeout(const Duration(seconds: 8));
 
       if (response.statusCode == 200) {
-        final data = Map<String, dynamic>.from(jsonDecode(response.body) as Map);
+        final data = Map<String, dynamic>.from(
+          jsonDecode(response.body) as Map,
+        );
         await OfflineCacheService.invalidateAllForToken(token);
         return data;
       }
@@ -278,7 +282,7 @@ class NotificationAPI {
     try {
       final response = await http
           .post(
-            Uri.parse('${_endpoint}$notificationId/mark_read/'),
+            Uri.parse("$_endpoint$notificationId/mark_read/"),
             headers: {
               "Authorization": "Token $token",
               "Content-Type": "application/json",
@@ -287,7 +291,9 @@ class NotificationAPI {
           .timeout(const Duration(seconds: 8));
 
       if (response.statusCode == 200) {
-        final data = Map<String, dynamic>.from(jsonDecode(response.body) as Map);
+        final data = Map<String, dynamic>.from(
+          jsonDecode(response.body) as Map,
+        );
         await OfflineCacheService.invalidateAllForToken(token);
         return data;
       }
@@ -313,7 +319,9 @@ class NotificationAPI {
           .timeout(const Duration(seconds: 8));
 
       if (response.statusCode == 200) {
-        final data = Map<String, dynamic>.from(jsonDecode(response.body) as Map);
+        final data = Map<String, dynamic>.from(
+          jsonDecode(response.body) as Map,
+        );
         await OfflineCacheService.invalidateAllForToken(token);
         return data;
       }

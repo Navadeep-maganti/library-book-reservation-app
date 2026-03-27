@@ -3,7 +3,7 @@
 A new Flutter project.
 
 cd c:\Users\uppug\library_app\frontend
-flutter run --dart-define=API_BASE_URL=http://172.180.13.8:8000
+flutter run --dart-define=API_BASE_URL=http://10.24.104.36:8000
 
 
 cd C:\Users\uppug\library_app\backend\server

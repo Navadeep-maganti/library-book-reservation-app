@@ -2,6 +2,7 @@ import "package:flutter/material.dart";
 import "package:intl/intl.dart";
 import "../../../core/services/library_api.dart";
 import "../../../core/utils/resume_refresh_state_mixin.dart";
+import "../../../core/widgets/app_ui.dart";
 
 class BorrowHistoryPage extends StatefulWidget {
   const BorrowHistoryPage({super.key});
@@ -74,6 +75,11 @@ class _BorrowHistoryPageState extends State<BorrowHistoryPage>
 
   @override
   Widget build(BuildContext context) {
+    final returnedCount = _history
+        .where((item) => "${item["status"] ?? ""}".toLowerCase() == "returned")
+        .length;
+    final activeCount = _history.length - returnedCount;
+
     return Scaffold(
       appBar: AppBar(title: const Text("Borrow History")),
       body: RefreshIndicator(
@@ -81,52 +87,119 @@ class _BorrowHistoryPageState extends State<BorrowHistoryPage>
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            AppPageHeader(
+              title: "Borrow history",
+              subtitle:
+                  "Track your active issues and previously returned books in one timeline.",
+              icon: Icons.history_rounded,
+              badges: [
+                AppHeaderBadge(label: "Active", value: "$activeCount"),
+                AppHeaderBadge(label: "Returned", value: "$returnedCount"),
+              ],
+            ),
+            const SizedBox(height: 18),
             if (_isLoading)
               const Center(child: CircularProgressIndicator())
             else if (_error != null)
-              Card(
-                child: ListTile(
-                  title: const Text("Failed to load history"),
-                  subtitle: Text(_error!.replaceFirst("Exception: ", "")),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.refresh),
-                    onPressed: _loadHistory,
-                  ),
-                ),
+              AppErrorCard(
+                title: "Failed to load history",
+                message: _error!.replaceFirst("Exception: ", ""),
+                onRetry: _loadHistory,
               )
             else if (_history.isEmpty)
-              const Card(
-                child: ListTile(title: Text("No borrow history found")),
+              const AppEmptyStateCard(
+                icon: Icons.history_toggle_off_outlined,
+                title: "No borrow history found",
+                subtitle:
+                    "Borrowed and returned books will start appearing here once you begin using the library.",
               )
             else
               ..._history.map((item) {
                 final status = "${item["status"] ?? ""}";
                 final isReturned = status.toLowerCase() == "returned";
                 return Card(
-                  margin: const EdgeInsets.only(bottom: 10),
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: isReturned
-                          ? Colors.green.shade50
-                          : Colors.amber.shade100,
-                      child: Icon(
-                        isReturned ? Icons.check_circle_outline : Icons.schedule,
-                        color: isReturned
-                            ? Colors.green.shade700
-                            : Colors.amber.shade800,
-                      ),
-                    ),
-                    title: Text("${item["book_title"] ?? "Untitled"}"),
-                    subtitle: Text(
-                      "Issued: ${_fmtDate(item["issue_date"])}\n"
-                      "Returned: ${_returnedLabel(item)}",
-                    ),
-                    isThreeLine: true,
-                    trailing: Chip(
-                      label: Text(isReturned ? "Returned" : "Active"),
-                      backgroundColor: isReturned
-                          ? Colors.green.shade50
-                          : Colors.amber.shade100,
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: isReturned
+                                ? Colors.green.withValues(alpha: 0.1)
+                                : Colors.orange.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Icon(
+                            isReturned
+                                ? Icons.check_circle_outline
+                                : Icons.schedule,
+                            color: isReturned
+                                ? const Color(0xFF15803D)
+                                : const Color(0xFFB45309),
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      "${item["book_title"] ?? "Untitled"}",
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Chip(
+                                    label: Text(
+                                      isReturned ? "Returned" : "Active",
+                                    ),
+                                    backgroundColor: isReturned
+                                        ? Colors.green.withValues(alpha: 0.1)
+                                        : Colors.orange.withValues(alpha: 0.12),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      "Issued: ${_fmtDate(item["issue_date"])}",
+                                      style: const TextStyle(
+                                        color: Color(0xFF475569),
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      "Return: ${_returnedLabel(item)}",
+                                      textAlign: TextAlign.right,
+                                      style: const TextStyle(
+                                        color: Color(0xFF475569),
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 );

@@ -42,7 +42,9 @@ class BorrowingAPI {
           .timeout(const Duration(seconds: 8));
 
       if (response.statusCode == 201) {
-        final data = Map<String, dynamic>.from(jsonDecode(response.body) as Map);
+        final data = Map<String, dynamic>.from(
+          jsonDecode(response.body) as Map,
+        );
         await OfflineCacheService.invalidateAllForToken(token);
         return data;
       } else if (response.statusCode == 400) {
@@ -65,7 +67,7 @@ class BorrowingAPI {
     try {
       final response = await http
           .post(
-            Uri.parse('${_endpoint}$issuedBookId/return_book/'),
+            Uri.parse("$_endpoint$issuedBookId/return_book/"),
             headers: {
               "Authorization": "Token $token",
               "Content-Type": "application/json",
@@ -75,7 +77,9 @@ class BorrowingAPI {
           .timeout(const Duration(seconds: 8));
 
       if (response.statusCode == 200) {
-        final data = Map<String, dynamic>.from(jsonDecode(response.body) as Map);
+        final data = Map<String, dynamic>.from(
+          jsonDecode(response.body) as Map,
+        );
         await OfflineCacheService.invalidateAllForToken(token);
         return data;
       }
