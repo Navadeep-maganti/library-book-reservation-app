@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'auth/services/auth_service.dart';
 import 'auth/screens/login_screen.dart';
+import 'auth/screens/register_screen.dart';
 import 'core/services/app_notification_service.dart';
 import 'student/screens/student_dashboard.dart';
 import 'librarian/screens/librarian_dashboard.dart';
@@ -47,11 +48,12 @@ class _LibraryAppState extends State<LibraryApp> with WidgetsBindingObserver {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       home: const StartupRouter(),
-      routes: {
-        "/login": (context) => const LoginScreen(),
-        "/student": (context) => const StudentDashboard(),
-        "/librarian": (context) => const LibrarianDashboard(),
-      },
+        routes: {
+          "/login": (context) => const LoginScreen(),
+          "/register": (context) => const RegisterScreen(),
+          "/student": (context) => const StudentDashboard(),
+          "/librarian": (context) => const LibrarianDashboard(),
+        },
     );
   }
 }

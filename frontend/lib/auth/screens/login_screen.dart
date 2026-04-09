@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/widgets/app_ui.dart';
+import 'register_screen.dart';
 import '../services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -222,9 +223,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ],
                                   ),
                                   const SizedBox(height: 10),
-                                  SizedBox(
-                                    width: double.infinity,
-                                    child: FilledButton.icon(
+                                   SizedBox(
+                                     width: double.infinity,
+                                     child: FilledButton.icon(
                                       onPressed: _isLoading
                                           ? null
                                           : _handleLogin,
@@ -242,12 +243,33 @@ class _LoginScreenState extends State<LoginScreen> {
                                         _isLoading
                                             ? "Signing in..."
                                             : "Continue to library",
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                ],
+                                    const SizedBox(height: 10),
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: OutlinedButton.icon(
+                                        onPressed: _isLoading
+                                            ? null
+                                            : () {
+                                                Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (context) =>
+                                                        const RegisterScreen(),
+                                                  ),
+                                                );
+                                              },
+                                        icon: const Icon(
+                                          Icons.person_add_alt_1_rounded,
+                                        ),
+                                        label: const Text("Create account"),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
                           ),
                           const SizedBox(height: 16),
                           const AppInfoBanner(

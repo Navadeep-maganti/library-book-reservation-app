@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -20,6 +19,19 @@ class AuthException implements Exception {
 class AuthService {
   static const _storage = FlutterSecureStorage();
 
+  static Future<void> _persistAuth(Map<String, dynamic> data) async {
+    await _storage.write(key: "token", value: data["token"] as String);
+    await _storage.write(key: "role", value: data["role"] as String);
+    await _storage.write(key: "username", value: data["username"] as String);
+    await _storage.write(key: "user_id", value: data["user_id"].toString());
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString("token", data["token"] as String);
+    await prefs.setString("role", data["role"] as String);
+    await prefs.setString("username", data["username"] as String);
+    await prefs.setString("user_id", data["user_id"].toString());
+    await AppNotificationService.ensureInitialized();
+  }
+
   static Future<String> login(String username, String password) async {
     final baseUrls = _loginBaseUrls();
 
@@ -34,24 +46,11 @@ class AuthService {
           )
               .timeout(const Duration(seconds: 8));
 
-          if (response.statusCode == 200) {
-            final data = jsonDecode(response.body);
-
-            await _storage.write(key: "token", value: data["token"]);
-            await _storage.write(key: "role", value: data["role"]);
-            await _storage.write(key: "username", value: data["username"]);
-            await _storage.write(
-              key: "user_id",
-              value: data["user_id"].toString(),
-            );
-            final prefs = await SharedPreferences.getInstance();
-            await prefs.setString("token", data["token"] as String);
-            await prefs.setString("role", data["role"] as String);
-            await prefs.setString("username", data["username"] as String);
-            await prefs.setString("user_id", data["user_id"].toString());
-            await AppNotificationService.ensureInitialized();
-            return data["role"] as String;
-          }
+           if (response.statusCode == 200) {
+             final data = jsonDecode(response.body);
+             await _persistAuth(data as Map<String, dynamic>);
+             return data["role"] as String;
+           }
 
           if (response.statusCode == 400 || response.statusCode == 401) {
             throw AuthException("Invalid credentials. Please try again.");
@@ -74,8 +73,7 @@ class AuthService {
       }
 
       throw AuthException(
-        "Cannot reach backend at: ${baseUrls.join(', ')}. "
-        "If using a real phone, run with --dart-define=API_BASE_URL=http://<PC_LAN_IP>:8000",
+        "Cannot reach backend at: ${baseUrls.join(', ')}.",
       );
     } on AuthException {
       rethrow;
@@ -84,18 +82,79 @@ class AuthService {
     }
   }
 
-  static List<String> _loginBaseUrls() {
-    final configured = ApiConstants.normalizedBaseUrl;
-    final urls = <String>[configured];
+  static Future<String> register({
+    required String username,
+    required String studentId,
+    required String password,
+    required String confirmPassword,
+  }) async {
+    try {
+      final response = await http
+          .post(
+            Uri.parse(ApiConstants.apiUrl("/auth/register/")),
+            headers: {"Content-Type": "application/json"},
+            body: jsonEncode({
+              "username": username.trim(),
+              "student_id": studentId.trim(),
+              "password": password,
+              "confirm_password": confirmPassword,
+            }),
+          )
+          .timeout(const Duration(seconds: 12));
 
-    if (!kIsWeb && Platform.isAndroid && !ApiConstants.hasOverrideBaseUrl) {
-      urls.addAll([
-        "http://127.0.0.1:8000",
-        "http://localhost:8000",
-      ]);
+      final body = response.body.isEmpty
+          ? <String, dynamic>{}
+          : jsonDecode(response.body) as Map<String, dynamic>;
+
+      if (response.statusCode == 201) {
+        await _persistAuth(body);
+        return body["role"] as String;
+      }
+
+      throw AuthException(_extractErrorMessage(body, fallback: "Registration failed."));
+    } on SocketException {
+      throw AuthException("Cannot reach backend. Check your internet connection.");
+    } on TimeoutException {
+      throw AuthException("Registration timed out. Please try again.");
+    } on http.ClientException {
+      throw AuthException("Could not connect to the backend service.");
+    } on AuthException {
+      rethrow;
+    } catch (_) {
+      throw AuthException("Registration failed. Please try again.");
+    }
+  }
+
+  static String _extractErrorMessage(
+    Map<String, dynamic> body, {
+    required String fallback,
+  }) {
+    if (body["detail"] is String) {
+      return body["detail"] as String;
+    }
+    if (body["message"] is String) {
+      return body["message"] as String;
     }
 
-    return urls.map(ApiConstants.normalizeBaseUrl).toSet().toList();
+    for (final entry in body.entries) {
+      final value = entry.value;
+      if (value is List && value.isNotEmpty) {
+        return value.first.toString();
+      }
+      if (value is String && value.isNotEmpty) {
+        return value;
+      }
+    }
+
+    return fallback;
+  }
+
+  static List<String> _loginBaseUrls() {
+    final configured = ApiConstants.normalizedBaseUrl;
+    return <String>[configured]
+        .map(ApiConstants.normalizeBaseUrl)
+        .toSet()
+        .toList();
   }
 
   static Future<void> logout() async {
