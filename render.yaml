@@ -11,4 +11,8 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: ALLOWED_HOSTS
-        value: library-app-backend.onrender.com
+        value: library-app-backend.onrender.com,library-book-reservation-app-3eyv.onrender.com
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://library-book-reservation-app-3eyv.onrender.com,https://library-app-backend.onrender.com
+      - key: CSRF_TRUSTED_ORIGINS
+        value: https://library-book-reservation-app-3eyv.onrender.com,https://library-app-backend.onrender.com
