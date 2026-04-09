@@ -102,16 +102,20 @@ class AuthService {
           )
           .timeout(const Duration(seconds: 12));
 
-      final body = response.body.isEmpty
-          ? <String, dynamic>{}
-          : jsonDecode(response.body) as Map<String, dynamic>;
+      final body = _decodeJsonObject(response.body);
 
       if (response.statusCode == 201) {
         await _persistAuth(body);
         return body["role"] as String;
       }
 
-      throw AuthException(_extractErrorMessage(body, fallback: "Registration failed."));
+      throw AuthException(
+        _extractErrorMessage(
+          body,
+          fallback:
+              "Registration failed (HTTP ${response.statusCode}). Please try again.",
+        ),
+      );
     } on SocketException {
       throw AuthException("Cannot reach backend. Check your internet connection.");
     } on TimeoutException {
@@ -147,6 +151,24 @@ class AuthService {
     }
 
     return fallback;
+  }
+
+  static Map<String, dynamic> _decodeJsonObject(String rawBody) {
+    if (rawBody.isEmpty) {
+      return <String, dynamic>{};
+    }
+
+    try {
+      final decoded = jsonDecode(rawBody);
+      if (decoded is Map<String, dynamic>) {
+        return decoded;
+      }
+    } catch (_) {
+      // Some server errors come back as HTML; fall through to an empty body
+      // so the caller can surface a useful fallback message.
+    }
+
+    return <String, dynamic>{};
   }
 
   static List<String> _loginBaseUrls() {

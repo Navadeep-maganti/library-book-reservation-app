@@ -98,13 +98,24 @@ WSGI_APPLICATION = "server.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+default_database_url = os.getenv(
+    "DATABASE_URL",
+    f"sqlite:///{BASE_DIR / 'db_role_based.sqlite3'}",
+)
+
 DATABASES = {
-    "default": dj_database_url.config(
-        default=f"sqlite:///{BASE_DIR / 'db_role_based.sqlite3'}",
+    "default": dj_database_url.parse(
+        default_database_url,
         conn_max_age=600,
-        ssl_require=not DEBUG,
     )
 }
+
+if (
+    not DEBUG
+    and DATABASES["default"]["ENGINE"] != "django.db.backends.sqlite3"
+):
+    DATABASES["default"].setdefault("OPTIONS", {})
+    DATABASES["default"]["OPTIONS"]["sslmode"] = "require"
 
 
 # Password validation
