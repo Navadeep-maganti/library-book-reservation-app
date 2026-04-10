@@ -1,4 +1,7 @@
 import "package:flutter/material.dart";
+import "package:url_launcher/url_launcher.dart";
+
+import "../../../core/services/book_api.dart";
 import "../../../core/services/library_api.dart";
 import "../../../core/widgets/app_ui.dart";
 
@@ -18,6 +21,7 @@ class BookDetailsPage extends StatefulWidget {
 
 class _BookDetailsPageState extends State<BookDetailsPage> {
   bool _submitting = false;
+  bool _openingDigital = false;
 
   int _toInt(dynamic value) {
     if (value is int) return value;
@@ -58,6 +62,58 @@ class _BookDetailsPageState extends State<BookDetailsPage> {
     }
   }
 
+  bool _toBool(dynamic value) {
+    if (value is bool) return value;
+    final normalized = "$value".trim().toLowerCase();
+    return normalized == "true" || normalized == "1";
+  }
+
+  Future<void> _openDigitalCopy({required bool download}) async {
+    if (_openingDigital) return;
+    final id = _toInt(widget.book["id"]);
+    final title = "${widget.book["title"] ?? "book"}";
+
+    setState(() {
+      _openingDigital = true;
+    });
+    try {
+      final access = await BookAPI.getDigitalAccess(id);
+      final url = "${access["access_url"] ?? ""}".trim();
+      final canDownload = _toBool(access["can_download"]);
+      if (url.isEmpty) {
+        throw Exception("Digital copy is not configured yet.");
+      }
+      if (download && !canDownload) {
+        throw Exception("Download is disabled for this title.");
+      }
+
+      final uri = Uri.parse(url);
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+        webOnlyWindowName: download ? "_blank" : "ebook-viewer",
+      );
+      if (!launched) {
+        throw Exception(
+          download
+              ? "Could not start the download for \"$title\"."
+              : "Could not open the reader for \"$title\".",
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst("Exception: ", ""))),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _openingDigital = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final title = "${widget.book["title"] ?? "Untitled"}";
@@ -70,6 +126,9 @@ class _BookDetailsPageState extends State<BookDetailsPage> {
     final totalCopies = _toInt(widget.book["total_copies"]);
     final availableCopies = _toInt(widget.book["available_copies"]);
     final available = availableCopies > 0;
+    final hasDigitalCopy = _toBool(widget.book["has_digital_copy"]);
+    final allowDigitalDownload = _toBool(widget.book["allow_digital_download"]);
+    final digitalFormat = "${widget.book["digital_format"] ?? ""}".trim();
     final reservationDisabledReason = widget.reservationDisabledMessage?.trim();
     final reservationDisabled =
         reservationDisabledReason != null &&
@@ -88,25 +147,57 @@ class _BookDetailsPageState extends State<BookDetailsPage> {
             : available
             ? "$availableCopies of $totalCopies copies can be reserved for the next 30 minutes."
             : "No copy is free right now, but you can still join the waiting list.",
-        child: FilledButton.icon(
-          onPressed: (_submitting || reservationDisabled) ? null : _reserveBook,
-          icon: _submitting
-              ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.white,
-                  ),
-                )
-              : const Icon(Icons.lock_clock_outlined),
-          label: Text(
-            reservationDisabled
-                ? "Reservation limit reached"
-                : available
-                ? "Reserve for 30 minutes"
-                : "Join waiting list",
-          ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (hasDigitalCopy) ...[
+              OutlinedButton.icon(
+                onPressed: _openingDigital
+                    ? null
+                    : () => _openDigitalCopy(download: false),
+                icon: _openingDigital
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.auto_stories_outlined),
+                label: const Text("Read PDF"),
+              ),
+              const SizedBox(height: 10),
+              if (allowDigitalDownload) ...[
+                OutlinedButton.icon(
+                  onPressed: _openingDigital
+                      ? null
+                      : () => _openDigitalCopy(download: true),
+                  icon: const Icon(Icons.download_rounded),
+                  label: const Text("Download PDF"),
+                ),
+                const SizedBox(height: 10),
+              ],
+            ],
+            FilledButton.icon(
+              onPressed: (_submitting || reservationDisabled) ? null : _reserveBook,
+              icon: _submitting
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.lock_clock_outlined),
+              label: Text(
+                reservationDisabled
+                    ? "Reservation limit reached"
+                    : available
+                    ? "Reserve for 30 minutes"
+                    : "Join waiting list",
+              ),
+            ),
+          ],
         ),
       ),
       body: ListView(
@@ -120,6 +211,13 @@ class _BookDetailsPageState extends State<BookDetailsPage> {
             badges: [
               AppHeaderBadge(label: "Author", value: author),
               AppHeaderBadge(label: "Shelf", value: shelf),
+              if (hasDigitalCopy)
+                AppHeaderBadge(
+                  label: "Digital",
+                  value: digitalFormat.isEmpty
+                      ? "Available"
+                      : digitalFormat.toUpperCase(),
+                ),
             ],
             trailing: const AppBookCover(width: 76, height: 100),
           ),
@@ -162,6 +260,30 @@ class _BookDetailsPageState extends State<BookDetailsPage> {
                 available ? "Available now" : "Currently unavailable",
               ),
               subtitle: Text("Copies: $availableCopies / $totalCopies"),
+            ),
+          ),
+          const SizedBox(height: 12),
+          const AppSectionHeader(
+            title: "Digital access",
+            subtitle: "Read online or download a soft copy when the title includes one.",
+          ),
+          const SizedBox(height: 8),
+          Card(
+            child: ListTile(
+              leading: Icon(
+                hasDigitalCopy ? Icons.cloud_done_outlined : Icons.cloud_off_outlined,
+                color: hasDigitalCopy ? Colors.teal : Colors.grey,
+              ),
+              title: Text(
+                hasDigitalCopy ? "Soft copy available" : "Physical copy only",
+              ),
+              subtitle: Text(
+                hasDigitalCopy
+                    ? allowDigitalDownload
+                        ? "Students can read online and download this title."
+                        : "Students can read this title online, but downloads are disabled."
+                    : "This title does not have a digital file attached yet.",
+              ),
             ),
           ),
           const SizedBox(height: 12),

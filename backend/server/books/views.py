@@ -6,6 +6,9 @@ from django.db import transaction
 from django.utils import timezone
 from datetime import timedelta
 from decimal import Decimal
+import re
+from urllib.error import URLError
+from urllib.request import Request, urlopen
 from .models import (
     Book, IssuedBook, BookRenewal, BorrowHistory, BookReservation,
     Fine, FinePayment, Notification, Announcement, LibrarySettings, PushDevice
@@ -25,6 +28,96 @@ MAX_ACTIVE_STUDENT_ITEMS = 3
 
 def _sum_amounts(values):
     return sum(values, Decimal("0.00"))
+
+
+def _resolve_pdf_url(url):
+    if not url:
+        return None
+    if url.lower().endswith(".pdf"):
+        return url
+
+    req = Request(
+        url,
+        headers={'User-Agent': 'library-app-reader/1.0'},
+    )
+    with urlopen(req, timeout=15) as response:
+        html = response.read().decode('utf-8', errors='replace')
+        base_url = response.geturl()
+
+    match = re.search(r'https://[^"\']+\.pdf', html, re.IGNORECASE)
+    if match:
+        return match.group(0)
+
+    match = re.search(r'["\']([^"\']+\.pdf)["\']', html, re.IGNORECASE)
+    if match:
+        candidate = match.group(1)
+        if candidate.startswith("http://") or candidate.startswith("https://"):
+            return candidate
+        if candidate.startswith("/"):
+            from urllib.parse import urljoin
+            return urljoin(base_url, candidate)
+
+    return None
+
+
+def _clean_reader_text(raw_text):
+    text = raw_text.replace("\ufeff", "")
+    text = text.replace("ï»¿", "")
+    text = text.replace("â\x80\x9c", '"').replace("â\x80\x9d", '"')
+    text = text.replace("â\x80\x98", "'").replace("â\x80\x99", "'")
+    text = text.replace("â\x80\x94", "-").replace("â\x80\x93", "-")
+    text = text.replace("â€¦", "...")
+    text = text.replace("Â", "")
+
+    start_markers = [
+        "*** START OF THE PROJECT GUTENBERG EBOOK",
+        "*** START OF THIS PROJECT GUTENBERG EBOOK",
+    ]
+    end_markers = [
+        "*** END OF THE PROJECT GUTENBERG EBOOK",
+        "*** END OF THIS PROJECT GUTENBERG EBOOK",
+    ]
+
+    upper_text = text.upper()
+    start_index = 0
+    for marker in start_markers:
+        idx = upper_text.find(marker)
+        if idx != -1:
+            next_newline = text.find("\n", idx)
+            start_index = next_newline + 1 if next_newline != -1 else idx
+            break
+
+    end_index = len(text)
+    for marker in end_markers:
+        idx = upper_text.find(marker)
+        if idx != -1:
+            end_index = idx
+            break
+
+    text = text[start_index:end_index].strip()
+    lines = [line.strip() for line in text.splitlines()]
+    filtered_lines = []
+    skipped_preface = 0
+    for line in lines:
+        if not line:
+            filtered_lines.append("")
+            continue
+        if skipped_preface < 8 and (
+            line.startswith("Title:")
+            or line.startswith("Author:")
+            or line.startswith("Release date:")
+            or line.startswith("Language:")
+            or line.startswith("Produced by:")
+            or "PROJECT GUTENBERG" in line.upper()
+        ):
+            skipped_preface += 1
+            continue
+        filtered_lines.append(line)
+
+    cleaned = "\n".join(filtered_lines)
+    while "\n\n\n" in cleaned:
+        cleaned = cleaned.replace("\n\n\n", "\n\n")
+    return cleaned.strip()
 
 
 def _reservation_attempts_on_day(student, book, *, target_date):
@@ -297,6 +390,75 @@ class BookViewSet(viewsets.ReadOnlyModelViewSet):
             'total_copies': book.total_copies,
             'waitlist_count': reservations,
             'next_available_date': next_available
+        })
+
+    @action(detail=True, methods=['get'], url_path='digital-access')
+    def digital_access(self, request, pk=None):
+        book = self.get_object()
+        if not book.has_digital_copy:
+            return Response(
+                {'error': 'No digital copy is available for this title.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        access_url = None
+        source = None
+        if book.digital_external_url:
+            try:
+                access_url = _resolve_pdf_url(book.digital_external_url)
+            except URLError:
+                access_url = None
+            source = 'external'
+        elif book.digital_file:
+            access_url = request.build_absolute_uri(book.digital_file.url)
+            source = 'uploaded'
+
+        if not access_url:
+            return Response(
+                {'error': 'A PDF version is not available for this title right now.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        return Response({
+            'book_id': book.id,
+            'title': book.title,
+            'has_digital_copy': True,
+            'format': 'pdf',
+            'can_download': book.allow_digital_download,
+            'source': source,
+            'access_url': access_url,
+            'read_content_url': None,
+        })
+
+    @action(detail=True, methods=['get'], url_path='read-content')
+    def read_content(self, request, pk=None):
+        book = self.get_object()
+        if not book.digital_read_url:
+            return Response(
+                {'error': 'No in-app reading source is available for this title.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        try:
+            req = Request(
+                book.digital_read_url,
+                headers={'User-Agent': 'library-app-reader/1.0'},
+            )
+            with urlopen(req, timeout=15) as response:
+                raw = response.read().decode('utf-8', errors='replace')
+        except URLError:
+            return Response(
+                {'error': 'Could not load the reading content right now.'},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+
+        cleaned = _clean_reader_text(raw)
+        return Response({
+            'book_id': book.id,
+            'title': book.title,
+            'author': book.author,
+            'content': cleaned,
+            'source_url': book.digital_read_url,
         })
 
     @action(detail=False, methods=['get'])

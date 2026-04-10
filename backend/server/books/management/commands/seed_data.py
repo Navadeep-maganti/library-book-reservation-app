@@ -20,8 +20,6 @@ from books.models import (
 )
 
 User = get_user_model()
-
-
 LIBRARIANS = [
     {
         "username": "admin",
@@ -89,136 +87,184 @@ STUDENTS = [
 
 BOOKS = [
     {
-        "isbn": "9781119800368",
-        "title": "Operating Systems",
-        "author": "Abraham Silberschatz",
-        "category": "Computer Science",
-        "shelf": "CS-A12",
-        "description": "Core concepts in process management, memory, filesystems, and concurrency.",
+        "isbn": "9780141439518",
+        "title": "Pride and Prejudice",
+        "author": "Jane Austen",
+        "category": "Classic Fiction",
+        "shelf": "CL-A01",
+        "description": "Elizabeth Bennet navigates manners, marriage, and misjudgment in Austen's enduring novel.",
+        "digital_external_url": "https://www.planetebook.com/pride-and-prejudice/",
+        "digital_read_url": "",
+        "digital_format": "pdf",
+        "allow_digital_download": True,
         "total_copies": 8,
-        "available_copies": 5,
-        "published_year": 2018,
+        "available_copies": 8,
+        "published_year": 1813,
     },
     {
-        "isbn": "9780072465631",
-        "title": "Database Management Systems",
-        "author": "Raghu Ramakrishnan",
-        "category": "Computer Science",
-        "shelf": "CS-B08",
-        "description": "Relational design, transactions, indexing, and query optimization.",
+        "isbn": "9780141439600",
+        "title": "Jane Eyre",
+        "author": "Charlotte Bronte",
+        "category": "Classic Fiction",
+        "shelf": "CL-A02",
+        "description": "An orphaned governess claims dignity, love, and independence in Victorian England.",
+        "digital_external_url": "https://www.planetebook.com/jane-eyre/",
+        "digital_read_url": "",
+        "digital_format": "pdf",
+        "allow_digital_download": True,
         "total_copies": 6,
-        "available_copies": 3,
-        "published_year": 2002,
+        "available_copies": 6,
+        "published_year": 1847,
     },
     {
-        "isbn": "9780132126953",
-        "title": "Computer Networks",
-        "author": "Andrew S. Tanenbaum",
-        "category": "Computer Science",
-        "shelf": "CS-A04",
-        "description": "Network layers, protocols, routing, and performance fundamentals.",
+        "isbn": "9780141439761",
+        "title": "Wuthering Heights",
+        "author": "Emily Bronte",
+        "category": "Classic Fiction",
+        "shelf": "CL-A03",
+        "description": "A fierce tale of obsession, memory, and revenge across generations on the moors.",
+        "digital_external_url": "https://www.planetebook.com/wuthering-heights/",
+        "digital_read_url": "",
+        "digital_format": "pdf",
+        "allow_digital_download": True,
         "total_copies": 7,
-        "available_copies": 4,
-        "published_year": 2011,
+        "available_copies": 7,
+        "published_year": 1847,
     },
     {
-        "isbn": "9780132350884",
-        "title": "Clean Code",
-        "author": "Robert C. Martin",
-        "category": "Software Engineering",
-        "shelf": "SE-C11",
-        "description": "Practical guidance for writing maintainable, readable software.",
+        "isbn": "9780141439519",
+        "title": "Frankenstein",
+        "author": "Mary Shelley",
+        "category": "Classic Fiction",
+        "shelf": "CL-A04",
+        "description": "Shelley's gothic novel explores ambition, creation, and moral responsibility.",
+        "digital_external_url": "https://www.planetebook.com/frankenstein/",
+        "digital_read_url": "",
+        "digital_format": "pdf",
+        "allow_digital_download": True,
         "total_copies": 5,
-        "available_copies": 2,
-        "published_year": 2008,
+        "available_copies": 5,
+        "published_year": 1818,
     },
     {
-        "isbn": "9780132143011",
-        "title": "Distributed Systems",
-        "author": "George Coulouris",
-        "category": "Computer Science",
-        "shelf": "CS-D02",
-        "description": "Architectures, coordination, fault tolerance, and distributed design.",
+        "isbn": "9780141439662",
+        "title": "The Adventures of Sherlock Holmes",
+        "author": "Arthur Conan Doyle",
+        "category": "Mystery",
+        "shelf": "MY-B01",
+        "description": "A classic collection of Holmes and Watson investigations.",
+        "digital_external_url": "https://www.planetebook.com/the-adventures-of-sherlock-holmes/",
+        "digital_read_url": "",
+        "digital_format": "pdf",
+        "allow_digital_download": True,
         "total_copies": 4,
-        "available_copies": 1,
-        "published_year": 2011,
-    },
-    {
-        "isbn": "9780262046305",
-        "title": "Introduction to Algorithms",
-        "author": "Thomas H. Cormen",
-        "category": "Algorithms",
-        "shelf": "CS-AL09",
-        "description": "Foundational algorithms and data structures for advanced study.",
-        "total_copies": 6,
-        "available_copies": 2,
-        "published_year": 2022,
-    },
-    {
-        "isbn": "9780201633610",
-        "title": "Design Patterns",
-        "author": "Erich Gamma",
-        "category": "Software Engineering",
-        "shelf": "SE-DP01",
-        "description": "Classic reusable object-oriented design patterns.",
-        "total_copies": 4,
-        "available_copies": 1,
-        "published_year": 1994,
-    },
-    {
-        "isbn": "9780201616224",
-        "title": "The Pragmatic Programmer",
-        "author": "Andrew Hunt",
-        "category": "Software Engineering",
-        "shelf": "SE-PP02",
-        "description": "Timeless habits and practical techniques for software professionals.",
-        "total_copies": 5,
-        "available_copies": 2,
-        "published_year": 1999,
-    },
-    {
-        "isbn": "9781593279288",
-        "title": "Python Crash Course",
-        "author": "Eric Matthes",
-        "category": "Programming",
-        "shelf": "PROG-PY02",
-        "description": "Beginner-friendly introduction to Python with real projects.",
-        "total_copies": 6,
         "available_copies": 4,
-        "published_year": 2019,
+        "published_year": 1892,
     },
     {
-        "isbn": "9780262035613",
-        "title": "Deep Learning",
-        "author": "Ian Goodfellow",
-        "category": "Data Science",
-        "shelf": "DS-DL02",
-        "description": "Comprehensive deep learning theory and practice.",
+        "isbn": "9780141321097",
+        "title": "Treasure Island",
+        "author": "Robert Louis Stevenson",
+        "category": "Adventure",
+        "shelf": "AD-B02",
+        "description": "Pirates, maps, and mutiny power Stevenson's landmark adventure novel.",
+        "digital_external_url": "https://www.planetebook.com/treasure-island/",
+        "digital_read_url": "",
+        "digital_format": "pdf",
+        "allow_digital_download": True,
+        "total_copies": 6,
+        "available_copies": 6,
+        "published_year": 1883,
+    },
+    {
+        "isbn": "9780141439778",
+        "title": "Alice's Adventures in Wonderland",
+        "author": "Lewis Carroll",
+        "category": "Fantasy",
+        "shelf": "FA-C01",
+        "description": "Alice tumbles into a whimsical world of riddles, logic, and impossible creatures.",
+        "digital_external_url": "https://www.planetebook.com/alices-adventures-in-wonderland/",
+        "digital_read_url": "",
+        "digital_format": "pdf",
+        "allow_digital_download": True,
+        "total_copies": 4,
+        "available_copies": 4,
+        "published_year": 1865,
+    },
+    {
+        "isbn": "9780141439723",
+        "title": "A Tale of Two Cities",
+        "author": "Charles Dickens",
+        "category": "Historical Fiction",
+        "shelf": "HF-C02",
+        "description": "Dickens sets personal sacrifice against the turbulence of the French Revolution.",
+        "digital_external_url": "https://www.planetebook.com/a-tale-of-two-cities/",
+        "digital_read_url": "",
+        "digital_format": "pdf",
+        "allow_digital_download": True,
+        "total_copies": 5,
+        "available_copies": 5,
+        "published_year": 1859,
+    },
+    {
+        "isbn": "9780141439747",
+        "title": "Dracula",
+        "author": "Bram Stoker",
+        "category": "Horror",
+        "shelf": "HR-C03",
+        "description": "A foundational vampire novel told through letters, journals, and reports.",
+        "digital_external_url": "https://www.planetebook.com/dracula/",
+        "digital_read_url": "",
+        "digital_format": "pdf",
+        "allow_digital_download": True,
+        "total_copies": 6,
+        "available_copies": 6,
+        "published_year": 1897,
+    },
+    {
+        "isbn": "9780141439792",
+        "title": "The Picture of Dorian Gray",
+        "author": "Oscar Wilde",
+        "category": "Classic Fiction",
+        "shelf": "CL-C04",
+        "description": "Wilde's dark novel of beauty, corruption, and conscience.",
+        "digital_external_url": "https://www.planetebook.com/the-picture-of-dorian-gray/",
+        "digital_read_url": "",
+        "digital_format": "pdf",
+        "allow_digital_download": True,
         "total_copies": 3,
-        "available_copies": 0,
-        "published_year": 2016,
-    },
-    {
-        "isbn": "9780131873032",
-        "title": "Speech and Language Processing",
-        "author": "Daniel Jurafsky",
-        "category": "Data Science",
-        "shelf": "DS-NLP03",
-        "description": "NLP concepts spanning language models, parsing, and semantics.",
-        "total_copies": 4,
-        "available_copies": 0,
-        "published_year": 2008,
-    },
-    {
-        "isbn": "9783319110288",
-        "title": "Linear Algebra Done Right",
-        "author": "Sheldon Axler",
-        "category": "Mathematics",
-        "shelf": "MATH-LA03",
-        "description": "Rigorous linear algebra text popular in undergraduate programs.",
-        "total_copies": 5,
         "available_copies": 3,
-        "published_year": 2015,
+        "published_year": 1890,
+    },
+    {
+        "isbn": "9780141439808",
+        "title": "The Time Machine",
+        "author": "H. G. Wells",
+        "category": "Science Fiction",
+        "shelf": "SF-D01",
+        "description": "A Victorian inventor travels beyond his era to witness humanity's distant future.",
+        "digital_external_url": "https://www.planetebook.com/the-time-machine/",
+        "digital_read_url": "",
+        "digital_format": "pdf",
+        "allow_digital_download": True,
+        "total_copies": 4,
+        "available_copies": 4,
+        "published_year": 1895,
+    },
+    {
+        "isbn": "9780141439815",
+        "title": "The War of the Worlds",
+        "author": "H. G. Wells",
+        "category": "Science Fiction",
+        "shelf": "SF-D02",
+        "description": "A Martian invasion pushes Victorian society into chaos and survival.",
+        "digital_external_url": "https://www.planetebook.com/the-war-of-the-worlds/",
+        "digital_read_url": "",
+        "digital_format": "pdf",
+        "allow_digital_download": True,
+        "total_copies": 5,
+        "available_copies": 5,
+        "published_year": 1898,
     },
 ]
 
@@ -230,6 +276,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         now = timezone.now()
         self.stdout.write("Seeding library demo data...")
+        self._dedupe_books()
 
         settings_obj, _ = LibrarySettings.objects.update_or_create(
             id=1,
@@ -258,13 +305,13 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(f"{len(books)} books ready"))
 
         issued_specs = [
-            ("student1", "9781119800368", now - timedelta(days=10), now + timedelta(days=4), 0),
-            ("student1", "9780201633610", now - timedelta(days=16), now - timedelta(days=2), 1),
-            ("student2", "9780072465631", now - timedelta(days=8), now + timedelta(days=6), 0),
-            ("student2", "9780262035613", now - timedelta(days=18), now - timedelta(days=1), 2),
-            ("student3", "9780132126953", now - timedelta(days=5), now + timedelta(days=9), 0),
-            ("student4", "9780132350884", now - timedelta(days=11), now + timedelta(days=2), 1),
-            ("student5", "9780131873032", now - timedelta(days=13), now - timedelta(days=3), 0),
+            ("student1", "9780141439518", now - timedelta(days=10), now + timedelta(days=4), 0),
+            ("student1", "9780141439662", now - timedelta(days=16), now - timedelta(days=2), 1),
+            ("student2", "9780141439600", now - timedelta(days=8), now + timedelta(days=6), 0),
+            ("student2", "9780141439792", now - timedelta(days=18), now - timedelta(days=1), 2),
+            ("student3", "9780141439761", now - timedelta(days=5), now + timedelta(days=9), 0),
+            ("student4", "9780141439519", now - timedelta(days=11), now + timedelta(days=2), 1),
+            ("student5", "9780141439808", now - timedelta(days=13), now - timedelta(days=3), 0),
         ]
         issued_records = {}
         for username, isbn, issue_date, due_date, renewal_count in issued_specs:
@@ -278,7 +325,7 @@ class Command(BaseCommand):
             )
         self.stdout.write(self.style.SUCCESS("Issued books ready"))
 
-        renewal = issued_records[("student4", "9780132350884")]
+        renewal = issued_records[("student4", "9780141439519")]
         BookRenewal.objects.update_or_create(
             issued_book=renewal,
             old_due_date=renewal.due_date - timedelta(days=settings_obj.renewal_extends_days),
@@ -287,12 +334,12 @@ class Command(BaseCommand):
         )
 
         history_specs = [
-            ("student1", "9781593279288", now - timedelta(days=40), now - timedelta(days=26)),
-            ("student1", "9780262046305", now - timedelta(days=70), now - timedelta(days=55)),
-            ("student2", "9783319110288", now - timedelta(days=28), now - timedelta(days=14)),
-            ("student3", "9780201616224", now - timedelta(days=33), now - timedelta(days=18)),
-            ("student4", "9780132143011", now - timedelta(days=60), now - timedelta(days=46)),
-            ("student5", "9781119800368", now - timedelta(days=24), now - timedelta(days=9)),
+            ("student1", "9780141321097", now - timedelta(days=40), now - timedelta(days=26)),
+            ("student1", "9780141439778", now - timedelta(days=70), now - timedelta(days=55)),
+            ("student2", "9780141439723", now - timedelta(days=28), now - timedelta(days=14)),
+            ("student3", "9780141439747", now - timedelta(days=33), now - timedelta(days=18)),
+            ("student4", "9780141439815", now - timedelta(days=60), now - timedelta(days=46)),
+            ("student5", "9780141439518", now - timedelta(days=24), now - timedelta(days=9)),
         ]
         for username, isbn, issue_date, return_date in history_specs:
             BorrowHistory.objects.update_or_create(
@@ -308,7 +355,7 @@ class Command(BaseCommand):
 
         fine1, _ = Fine.objects.update_or_create(
             student=students["student2"],
-            issued_book=issued_records[("student2", "9780262035613")],
+            issued_book=issued_records[("student2", "9780141439792")],
             fine_type="overdue",
             defaults={
                 "amount": Decimal("30.00"),
@@ -319,7 +366,7 @@ class Command(BaseCommand):
         )
         fine2, _ = Fine.objects.update_or_create(
             student=students["student5"],
-            issued_book=issued_records[("student5", "9780131873032")],
+            issued_book=issued_records[("student5", "9780141439808")],
             fine_type="damage",
             defaults={
                 "amount": Decimal("60.00"),
@@ -337,9 +384,9 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS("Fines ready"))
 
         reservation_specs = [
-            ("student3", "9780262035613", 1, "pending"),
-            ("student4", "9780262035613", 2, "pending"),
-            ("student1", "9780131873032", 1, "notified"),
+            ("student3", "9780141439792", 1, "pending"),
+            ("student4", "9780141439792", 2, "pending"),
+            ("student1", "9780141439808", 1, "notified"),
         ]
         for username, isbn, queue_position, status in reservation_specs:
             BookReservation.objects.update_or_create(
@@ -384,29 +431,29 @@ class Command(BaseCommand):
                 "student1",
                 "due_reminder",
                 "Book due soon",
-                "Your copy of Operating Systems is due in 4 days.",
-                "9781119800368",
+                "Your copy of Pride and Prejudice is due in 4 days.",
+                "9780141439518",
             ),
             (
                 "student2",
                 "fine_alert",
                 "Outstanding fine",
                 "You have an unpaid overdue fine of Rs 30.00.",
-                "9780262035613",
+                "9780141439792",
             ),
             (
                 "student3",
                 "waiting_list",
                 "Reservation queued",
-                "You are first in line for Deep Learning.",
-                "9780262035613",
+                "You are first in line for The Picture of Dorian Gray.",
+                "9780141439792",
             ),
             (
                 "student5",
                 "overdue_alert",
                 "Book overdue",
-                "Speech and Language Processing is now overdue by 3 days.",
-                "9780131873032",
+                "The Time Machine is now overdue by 3 days.",
+                "9780141439808",
             ),
         ]
         for username, notif_type, title, message, isbn in notification_specs:
@@ -423,6 +470,28 @@ class Command(BaseCommand):
             )
         self.stdout.write(self.style.SUCCESS("Notifications ready"))
         self.stdout.write(self.style.SUCCESS("Demo data seeding completed successfully."))
+
+    def _normalize_isbn(self, value):
+        return "".join(ch for ch in str(value or "") if ch.isalnum()).lower()
+
+    def _dedupe_books(self):
+        books_by_isbn = {}
+        for book in Book.objects.all().order_by("id"):
+            key = self._normalize_isbn(book.isbn)
+            if not key:
+                continue
+            keeper = books_by_isbn.get(key)
+            if keeper is None:
+                books_by_isbn[key] = book
+                continue
+            self._merge_book_into_keeper(keeper=keeper, duplicate=book)
+
+    def _merge_book_into_keeper(self, *, keeper, duplicate):
+        IssuedBook.objects.filter(book=duplicate).update(book=keeper)
+        BorrowHistory.objects.filter(book=duplicate).update(book=keeper)
+        BookReservation.objects.filter(book=duplicate).update(book=keeper)
+        Notification.objects.filter(related_book=duplicate).update(related_book=keeper)
+        duplicate.delete()
 
     def _upsert_user(self, spec):
         password = spec["password"]
@@ -450,6 +519,10 @@ class Command(BaseCommand):
                 "category": spec["category"],
                 "shelf": spec["shelf"],
                 "description": spec["description"],
+                "digital_external_url": spec.get("digital_external_url", ""),
+                "digital_read_url": spec.get("digital_read_url", ""),
+                "digital_format": spec.get("digital_format", ""),
+                "allow_digital_download": spec.get("allow_digital_download", True),
                 "total_copies": spec["total_copies"],
                 "available_copies": spec["available_copies"],
                 "published_year": spec["published_year"],

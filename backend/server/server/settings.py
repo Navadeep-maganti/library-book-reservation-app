@@ -55,16 +55,28 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-cors_allowed_origins = [
-    origin.strip()
-    for origin in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
-    if origin.strip()
-]
-
-if cors_allowed_origins:
-    CORS_ALLOWED_ORIGINS = cors_allowed_origins
+if DEBUG:
+    CORS_ALLOW_ALL_ORIGINS = True
 else:
-    CORS_ALLOW_ALL_ORIGINS = DEBUG
+    cors_allowed_origins = [
+        origin.strip()
+        for origin in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
+        if origin.strip()
+    ]
+    if cors_allowed_origins:
+        CORS_ALLOWED_ORIGINS = cors_allowed_origins
+
+
+# cors_allowed_origins = [
+#     origin.strip()
+#     for origin in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
+#     if origin.strip()
+# ]
+
+# if cors_allowed_origins:
+#     CORS_ALLOWED_ORIGINS = cors_allowed_origins
+# else:
+#     CORS_ALLOW_ALL_ORIGINS = DEBUG
 
 csrf_trusted_origins = [
     origin.strip()
@@ -154,6 +166,8 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

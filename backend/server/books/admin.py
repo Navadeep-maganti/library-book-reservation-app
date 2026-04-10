@@ -12,11 +12,45 @@ class BookAdmin(admin.ModelAdmin):
         "author",
         "isbn",
         "category",
+        "has_digital_copy",
+        "allow_digital_download",
         "available_copies",
         "total_copies",
     )
     search_fields = ("title", "author", "isbn")
     list_filter = ("category",)
+    fieldsets = (
+        (
+            "Catalog",
+            {
+                "fields": (
+                    "title",
+                    "author",
+                    "isbn",
+                    "category",
+                    "shelf",
+                    "description",
+                    "published_year",
+                )
+            },
+        ),
+        (
+            "Inventory",
+            {"fields": ("total_copies", "available_copies")},
+        ),
+        (
+            "Digital Access",
+            {
+                "fields": (
+                    "digital_file",
+                    "digital_external_url",
+                    "digital_read_url",
+                    "digital_format",
+                    "allow_digital_download",
+                )
+            },
+        ),
+    )
 
 
 @admin.register(IssuedBook)
@@ -87,4 +121,3 @@ class LibrarySettingsAdmin(admin.ModelAdmin):
         "overdue_fine_per_day",
         "max_renewals",
     )
-

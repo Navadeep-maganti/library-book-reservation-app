@@ -13,6 +13,11 @@ class Book(models.Model):
     category = models.CharField(max_length=100, blank=True)
     shelf = models.CharField(max_length=50, blank=True)
     description = models.TextField(blank=True)
+    digital_file = models.FileField(upload_to="books/digital/", null=True, blank=True)
+    digital_external_url = models.URLField(blank=True)
+    digital_read_url = models.URLField(blank=True)
+    digital_format = models.CharField(max_length=20, blank=True)
+    allow_digital_download = models.BooleanField(default=True)
     total_copies = models.PositiveIntegerField(default=1)
     available_copies = models.PositiveIntegerField(default=1)
     published_year = models.PositiveIntegerField(null=True, blank=True)
@@ -20,6 +25,10 @@ class Book(models.Model):
 
     def __str__(self):
         return f"{self.title} - {self.author}"
+
+    @property
+    def has_digital_copy(self):
+        return bool(self.digital_file or self.digital_external_url)
 
 
 class IssuedBook(models.Model):

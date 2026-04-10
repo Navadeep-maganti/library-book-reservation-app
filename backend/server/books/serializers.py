@@ -9,30 +9,56 @@ from datetime import timedelta
 
 class BookSerializer(serializers.ModelSerializer):
     available_count = serializers.SerializerMethodField()
+    has_digital_copy = serializers.SerializerMethodField()
+    digital_access_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Book
         fields = ['id', 'title', 'author', 'isbn', 'category', 'shelf', 'description',
-                  'total_copies', 'available_copies', 'published_year', 'available_count']
+                  'total_copies', 'available_copies', 'published_year', 'available_count',
+                  'has_digital_copy', 'digital_format', 'allow_digital_download',
+                  'digital_access_url']
 
     def get_available_count(self, obj):
         return obj.available_copies
+
+    def get_has_digital_copy(self, obj):
+        return obj.has_digital_copy
+
+    def get_digital_access_url(self, obj):
+        request = self.context.get("request")
+        if request is None or not obj.has_digital_copy:
+            return None
+        return request.build_absolute_uri(f"/api/books/{obj.id}/digital-access/")
 
 
 class BookDetailSerializer(serializers.ModelSerializer):
     available_count = serializers.SerializerMethodField()
     waitlist_count = serializers.SerializerMethodField()
+    has_digital_copy = serializers.SerializerMethodField()
+    digital_access_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Book
         fields = ['id', 'title', 'author', 'isbn', 'category', 'shelf', 'description',
-                  'total_copies', 'available_copies', 'published_year', 'available_count', 'waitlist_count']
+                  'total_copies', 'available_copies', 'published_year', 'available_count',
+                  'waitlist_count', 'has_digital_copy', 'digital_format',
+                  'allow_digital_download', 'digital_access_url']
 
     def get_available_count(self, obj):
         return obj.available_copies
 
     def get_waitlist_count(self, obj):
         return obj.reservations.filter(status__in=['pending', 'notified']).count()
+
+    def get_has_digital_copy(self, obj):
+        return obj.has_digital_copy
+
+    def get_digital_access_url(self, obj):
+        request = self.context.get("request")
+        if request is None or not obj.has_digital_copy:
+            return None
+        return request.build_absolute_uri(f"/api/books/{obj.id}/digital-access/")
 
 
 class IssuedBookSerializer(serializers.ModelSerializer):
