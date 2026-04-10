@@ -24,6 +24,15 @@ User = get_user_model()
 
 LIBRARIANS = [
     {
+        "username": "admin",
+        "password": "admin",
+        "email": "admin@library.local",
+        "student_id": "ADMIN-001",
+        "role": User.Roles.LIBRARIAN,
+        "is_staff": True,
+        "is_superuser": True,
+    },
+    {
         "username": "librarian1",
         "password": "Lib@12345",
         "email": "librarian1@library.local",
