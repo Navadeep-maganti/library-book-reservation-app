@@ -294,7 +294,4 @@ The repository also currently contains a local SQLite database file at `backend/
 - the app is well suited for demos, coursework, and portfolio presentation
 - this repo is not yet production hardened for security, secrets, deployment, or large-scale usage
 
-## Suggested GitHub Description
-
-> Flutter + Django library management system with authentication, book circulation, reservations, fines, announcements, and optional mobile push notifications.
 
